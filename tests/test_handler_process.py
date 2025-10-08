@@ -591,25 +591,10 @@ class TestCompleteHandlerCoverage:
         result = process('job_id', [Image.new('RGB', (512, 512))],
                         Image.new('RGB', (512, 512)), '-1', '0,1')
 
+        # Should use first source face (index 0) for both target faces
+        assert mock_swap.call_count == 2
         assert isinstance(result, Image.Image)
 
-    @patch('handler.logger')
-    @patch('handler.get_many_faces')
-    @patch('handler.swap_face')
-    def test_source_indexes_expansion(self, mock_swap, mock_get_faces, mock_logger):
-        """Test source_indexes expansion when set to '-1' in else block"""
-        import handler
-        handler.FACE_ANALYSER = Mock()
-
-        mock_target_faces = [Mock(), Mock()]
-        mock_source_faces = [Mock(), Mock()]
-        mock_get_faces.side_effect = [mock_target_faces, mock_source_faces]
-        mock_swap.return_value = np.ones((512, 512, 3), dtype=np.uint8)
-
-        result = process('job_id', [Image.new('RGB', (512, 512))],
-                        Image.new('RGB', (512, 512)), '-1', '0,1')
-
-        assert mock_swap.call_count == 2
 
     @patch('handler.logger')
     @patch('handler.get_many_faces')
