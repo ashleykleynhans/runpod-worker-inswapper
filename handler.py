@@ -57,12 +57,19 @@ def get_one_face(face_analyser,
 
 
 def get_many_faces(face_analyser,
-                   frame:np.ndarray):
+                   frame:np.ndarray,
+                   min_face_size:float = 0.0):
     """
     get faces from left to right by order
     """
     try:
         face = face_analyser.get(frame)
+        if min_face_size > 0:
+            # Filter faces by minimum size as percentage of image dimensions
+            img_height, img_width = frame.shape[:2]
+            min_dimension = min(img_width, img_height)
+            min_pixels = min_dimension * (min_face_size / 100.0)
+            face = [f for f in face if (f.bbox[2] - f.bbox[0]) >= min_pixels or (f.bbox[3] - f.bbox[1]) >= min_pixels]
         return sorted(face, key=lambda x: x.bbox[0])
     except IndexError:
         return None
@@ -88,12 +95,13 @@ def process(job_id: str,
             source_img: Union[Image.Image, List],
             target_img: Image.Image,
             source_indexes: str,
-            target_indexes: str):
+            target_indexes: str,
+            min_face_size: float = 0.0):
 
     global MODEL, FACE_ANALYSER
 
     target_img = cv2.cvtColor(np.array(target_img), cv2.COLOR_RGB2BGR)
-    target_faces = get_many_faces(FACE_ANALYSER, target_img)
+    target_faces = get_many_faces(FACE_ANALYSER, target_img, min_face_size)
     num_target_faces = len(target_faces)
     num_source_images = len(source_img)
 
@@ -106,7 +114,7 @@ def process(job_id: str,
         if isinstance(source_img, list) and num_source_images == num_target_faces:
             logger.info('Replacing the faces in the target image from left to right by order', job_id)
             for i in range(num_target_faces):
-                source_faces = get_many_faces(FACE_ANALYSER, cv2.cvtColor(np.array(source_img[i]), cv2.COLOR_RGB2BGR))
+                source_faces = get_many_faces(FACE_ANALYSER, cv2.cvtColor(np.array(source_img[i]), cv2.COLOR_RGB2BGR), min_face_size)
                 source_index = i
                 target_index = i
 
@@ -122,7 +130,7 @@ def process(job_id: str,
                 )
         elif num_source_images == 1:
             # detect source faces that will be replaced into the target image
-            source_faces = get_many_faces(FACE_ANALYSER, cv2.cvtColor(np.array(source_img[0]), cv2.COLOR_RGB2BGR))
+            source_faces = get_many_faces(FACE_ANALYSER, cv2.cvtColor(np.array(source_img[0]), cv2.COLOR_RGB2BGR), min_face_size)
             num_source_faces = len(source_faces)
             logger.info(f'Source faces: {num_source_faces}', job_id)
             logger.info(f'Target faces: {num_target_faces}', job_id)
@@ -229,7 +237,8 @@ def face_swap(job_id: str,
               face_upsample,
               upscale,
               codeformer_fidelity,
-              output_format):
+              output_format,
+              min_face_size):
 
     global TORCH_DEVICE, CODEFORMER_DEVICE, CODEFORMER_NET
 
@@ -244,7 +253,8 @@ def face_swap(job_id: str,
             source_img,
             target_img,
             source_indexes,
-            target_indexes
+            target_indexes,
+            min_face_size
         )
         logger.info('Face swap complete', job_id)
     except Exception as e:
@@ -333,6 +343,7 @@ def face_swap_api(job_id: str, job_input: dict):
         logger.info(f'Upscale: {job_input["upscale"]}', job_id)
         logger.info(f'Codeformer Fidelity: {job_input["codeformer_fidelity"]}', job_id)
         logger.info(f'Output Format: {job_input["output_format"]}', job_id)
+        logger.info(f'Min Face Size: {job_input["min_face_size"]}', job_id)
 
         result_image = face_swap(
             job_id,
@@ -345,7 +356,8 @@ def face_swap_api(job_id: str, job_input: dict):
             job_input['face_upsample'],
             job_input['upscale'],
             job_input['codeformer_fidelity'],
-            job_input['output_format']
+            job_input['output_format'],
+            job_input['min_face_size']
         )
 
         clean_up_temporary_files(source_image_path, target_image_path)

@@ -364,7 +364,8 @@ class TestFaceSwap:
             False,
             1,
             0.5,
-            'JPEG'
+            'JPEG',
+            0
         )
 
         mock_restoration.assert_not_called()
@@ -401,7 +402,8 @@ class TestFaceSwap:
             True,
             2,
             0.7,
-            'PNG'
+            'PNG',
+            0
         )
 
         mock_restoration.assert_called_once()
@@ -429,7 +431,8 @@ class TestFaceSwap:
                 False,
                 1,
                 0.5,
-                'JPEG'
+                'JPEG',
+                0
             )
 
 
@@ -459,7 +462,8 @@ class TestFaceSwapApi:
             'face_upsample': True,
             'upscale': 2,
             'codeformer_fidelity': 0.5,
-            'output_format': 'JPEG'
+            'output_format': 'JPEG',
+            'min_face_size': 0
         }
 
         result = face_swap_api('job_id', job_input)
@@ -492,7 +496,8 @@ class TestFaceSwapApi:
             'face_upsample': True,
             'upscale': 2,
             'codeformer_fidelity': 0.5,
-            'output_format': 'JPEG'
+            'output_format': 'JPEG',
+            'min_face_size': 0
         }
 
         result = face_swap_api('job_id', job_input)
@@ -660,5 +665,6 @@ class TestCompleteHandlerCoverage:
                 True,
                 2,
                 0.7,
-                'PNG'
+                'PNG',
+                0
             )

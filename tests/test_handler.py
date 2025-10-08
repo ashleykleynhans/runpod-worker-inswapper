@@ -144,6 +144,28 @@ class TestGetManyFaces:
 
         assert result is None
 
+    def test_get_many_faces_with_min_size_filter(self):
+        """Test filtering faces by minimum size percentage"""
+        mock_analyser = Mock()
+
+        mock_face1 = Mock()
+        mock_face1.bbox = [100, 100, 300, 300]
+
+        mock_face2 = Mock()
+        mock_face2.bbox = [400, 100, 450, 150]
+
+        mock_face3 = Mock()
+        mock_face3.bbox = [500, 100, 700, 300]
+
+        mock_analyser.get.return_value = [mock_face1, mock_face2, mock_face3]
+
+        frame = np.zeros((1000, 1000, 3), dtype=np.uint8)
+        result = get_many_faces(mock_analyser, frame, min_face_size=20.0)
+
+        assert len(result) == 2
+        assert result[0] == mock_face1
+        assert result[1] == mock_face3
+
 
 class TestSwapFace:
     """Tests for swap_face function"""
