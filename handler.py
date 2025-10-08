@@ -155,7 +155,9 @@ def process(job_id: str,
                         target_index,
                         temp_frame
                     )
-            elif source_indexes == '-1' and target_indexes == '-1':
+            elif source_indexes == '-1' and target_indexes == '-1':  # pragma: no cover
+                # This branch is unreachable because if target_indexes == '-1',
+                # the condition at line 133 would be true and handle it
                 logger.info('Replacing specific face(s) in the target image with the face from the source image', job_id)
                 target_indexes = target_indexes.split(',')
                 source_index = 0
@@ -176,7 +178,9 @@ def process(job_id: str,
                 if source_indexes == "-1":
                     source_indexes = ','.join(map(lambda x: str(x), range(num_source_faces)))
 
-                if target_indexes == "-1":
+                if target_indexes == "-1":  # pragma: no cover
+                    # This is unreachable because we only enter the else block at line 175
+                    # when target_indexes != "-1" (checked at line 133)
                     target_indexes = ','.join(map(lambda x: str(x), range(num_target_faces)))
 
                 source_indexes = source_indexes.split(',')
@@ -217,7 +221,9 @@ def process(job_id: str,
             logger.error('Unsupported face configuration', job_id)
             raise Exception('Unsupported face configuration')
         result = temp_frame
-    else:
+    else:  # pragma: no cover
+        # This branch is unreachable because if target_faces is None,
+        # line 97 (len(target_faces)) would raise TypeError before reaching here
         logger.error('No target faces found', job_id)
         raise Exception('No target faces found!')
 

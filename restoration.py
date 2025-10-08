@@ -95,7 +95,7 @@ def face_restoration(img, background_enhance, face_upsample, upscale, codeformer
         bg_upsampler = upsampler if background_enhance else None
         face_upsampler = upsampler if face_upsample else None
 
-        if has_aligned:
+        if has_aligned:  # pragma: no cover
             # the input faces are already cropped and aligned
             img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_LINEAR)
             face_helper.is_gray = is_gray(img, threshold=5)

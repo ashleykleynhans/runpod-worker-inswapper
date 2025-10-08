@@ -502,3 +502,178 @@ class TestFaceSwapApi:
         assert 'refresh_worker' in result
         assert result['refresh_worker'] is True
         mock_cleanup.assert_called_once()
+
+
+class TestCompleteHandlerCoverage:
+    """Additional tests for complete handler.py coverage"""
+
+    @patch('handler.logger')
+    @patch('handler.get_many_faces')
+    @patch('handler.swap_face')
+    def test_fewer_source_than_target_faces(self, mock_swap, mock_get_faces, mock_logger):
+        """Test when there are fewer source faces than target faces"""
+        import handler
+        handler.FACE_ANALYSER = Mock()
+
+        mock_target_faces = [Mock(), Mock(), Mock()]
+        mock_source_faces = [Mock(), Mock()]
+
+        mock_get_faces.side_effect = [mock_target_faces, mock_source_faces]
+        mock_swap.return_value = np.ones((512, 512, 3), dtype=np.uint8)
+
+        result = process('job_id', [Image.new('RGB', (512, 512))],
+                        Image.new('RGB', (512, 512)), '-1', '-1')
+
+        assert mock_swap.call_count == 2
+
+    @patch('handler.logger')
+    @patch('handler.get_many_faces')
+    @patch('handler.swap_face')
+    def test_target_indexes_expansion(self, mock_swap, mock_get_faces, mock_logger):
+        """Test target_indexes expansion when set to '-1'"""
+        import handler
+        handler.FACE_ANALYSER = Mock()
+
+        mock_faces = [Mock(), Mock()]
+        mock_get_faces.side_effect = [mock_faces, mock_faces]
+        mock_swap.return_value = np.ones((512, 512, 3), dtype=np.uint8)
+
+        result = process('job_id', [Image.new('RGB', (512, 512))],
+                        Image.new('RGB', (512, 512)), '0,1', '-1')
+
+        assert mock_swap.call_count == 2
+
+    @patch('handler.logger')
+    @patch('handler.get_many_faces')
+    def test_empty_target_faces_list(self, mock_get_faces, mock_logger):
+        """Test error when target image has no faces"""
+        import handler
+        handler.FACE_ANALYSER = Mock()
+
+        mock_get_faces.return_value = []
+
+        with pytest.raises(Exception, match='The target image does not contain any faces!'):
+            process('job_id', [Image.new('RGB', (512, 512))],
+                   Image.new('RGB', (512, 512)), '-1', '-1')
+
+    @patch('handler.logger')
+    @patch('handler.get_many_faces')
+    @patch('handler.swap_face')
+    def test_single_source_face_replacement(self, mock_swap, mock_get_faces, mock_logger):
+        """Test single source face into multiple targets"""
+        import handler
+        handler.FACE_ANALYSER = Mock()
+
+        mock_target_faces = [Mock(), Mock()]
+        mock_source_faces = [Mock()]
+
+        mock_get_faces.side_effect = [mock_target_faces, mock_source_faces]
+        mock_swap.return_value = np.ones((512, 512, 3), dtype=np.uint8)
+
+        result = process('job_id', [Image.new('RGB', (512, 512))],
+                        Image.new('RGB', (512, 512)), '-1', '-1')
+
+        assert mock_swap.call_count == 1
+
+    @patch('handler.logger')
+    @patch('handler.get_many_faces')
+    @patch('handler.swap_face')
+    def test_specific_target_auto_source(self, mock_swap, mock_get_faces, mock_logger):
+        """Test source_indexes='-1' with specific target_indexes"""
+        import handler
+        handler.FACE_ANALYSER = Mock()
+
+        mock_target_faces = [Mock(), Mock(), Mock()]
+        mock_source_faces = [Mock()]
+        mock_get_faces.side_effect = [mock_target_faces, mock_source_faces]
+        mock_swap.return_value = np.ones((512, 512, 3), dtype=np.uint8)
+
+        result = process('job_id', [Image.new('RGB', (512, 512))],
+                        Image.new('RGB', (512, 512)), '-1', '0,1')
+
+        assert isinstance(result, Image.Image)
+
+    @patch('handler.logger')
+    @patch('handler.get_many_faces')
+    @patch('handler.swap_face')
+    def test_source_indexes_expansion(self, mock_swap, mock_get_faces, mock_logger):
+        """Test source_indexes expansion when set to '-1' in else block"""
+        import handler
+        handler.FACE_ANALYSER = Mock()
+
+        mock_target_faces = [Mock(), Mock()]
+        mock_source_faces = [Mock(), Mock()]
+        mock_get_faces.side_effect = [mock_target_faces, mock_source_faces]
+        mock_swap.return_value = np.ones((512, 512, 3), dtype=np.uint8)
+
+        result = process('job_id', [Image.new('RGB', (512, 512))],
+                        Image.new('RGB', (512, 512)), '-1', '0,1')
+
+        assert mock_swap.call_count == 2
+
+    @patch('handler.logger')
+    @patch('handler.get_many_faces')
+    @patch('handler.swap_face')
+    def test_mismatched_source_target_counts_no_swap(self, mock_swap, mock_get_faces, mock_logger):
+        """Test when source and target face counts don't match - no swap occurs"""
+        import handler
+        handler.FACE_ANALYSER = Mock()
+
+        mock_target_faces = [Mock(), Mock(), Mock()]
+        mock_source_faces = [Mock(), Mock(), Mock()]
+
+        mock_get_faces.side_effect = [mock_target_faces, mock_source_faces]
+        mock_swap.return_value = np.ones((512, 512, 3), dtype=np.uint8)
+
+        result = process('job_id', [Image.new('RGB', (512, 512))],
+                        Image.new('RGB', (512, 512)), '0,1,2', '0')
+
+        assert mock_swap.call_count == 0
+        assert isinstance(result, Image.Image)
+
+    @patch('handler.logger')
+    @patch('handler.get_many_faces')
+    def test_unsupported_face_configuration(self, mock_get_faces, mock_logger):
+        """Test unsupported face configuration error"""
+        import handler
+        handler.FACE_ANALYSER = Mock()
+
+        mock_target_faces = [Mock(), Mock()]
+        mock_get_faces.return_value = mock_target_faces
+
+        with pytest.raises(Exception, match='Unsupported face configuration'):
+            process('job_id', [Image.new('RGB', (512, 512)),
+                              Image.new('RGB', (512, 512)),
+                              Image.new('RGB', (512, 512))],
+                   Image.new('RGB', (512, 512)), '-1', '-1')
+
+    @patch('handler.face_restoration')
+    @patch('handler.process')
+    @patch('handler.Image.open')
+    def test_face_restoration_exception(self, mock_open, mock_process, mock_restoration):
+        """Test exception handling in face_restoration"""
+        import handler
+        handler.TORCH_DEVICE = 'cpu'
+        handler.CODEFORMER_DEVICE = 'cpu'
+        handler.CODEFORMER_NET = Mock()
+        handler.upsampler = Mock()
+
+        mock_img = Image.new('RGB', (512, 512))
+        mock_open.return_value = mock_img
+        mock_process.return_value = mock_img
+        mock_restoration.side_effect = Exception("Restoration failed")
+
+        with pytest.raises(Exception, match="Restoration failed"):
+            face_swap(
+                'job_id',
+                '/tmp/source.jpg',
+                '/tmp/target.jpg',
+                '-1',
+                '-1',
+                True,
+                True,
+                True,
+                2,
+                0.7,
+                'PNG'
+            )
