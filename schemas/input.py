@@ -50,5 +50,10 @@ INPUT_SCHEMA = {
             'JPEG',
             'PNG'
         ]
+    },
+    'min_face_size': {
+        'type': float,
+        'required': False,
+        'default': 0.0
     }
 }

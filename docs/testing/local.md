@@ -28,13 +28,13 @@ python3 -u handler.py --rp_serve_api
 ```
 
 **NOTE:** You need to keep the RunPod Handler API running in order to
-run the tests, so open a new terminal window to run the tests. 
+run the examples, so open a new terminal window to run the examples. 
 
 ## Set your test data files
 
 You can either overwrite the images in the `data` directory with your
 own source and target files, or alternatively, you can edit the
-scripts in the `tests` directory to reference the source and target
+scripts in the `examples` directory to reference the source and target
 images somewhere else on your system.
 
 ## Remove credentials from .env
@@ -44,16 +44,16 @@ If you have added your `RUNPOD_API_KEY` and
 this directory, you should first comment them
 out before attempting to test locally.  If
 the .env file exists and the values are provided,
-the tests will attempt to send the requests to
+the examples will attempt to send the requests to
 your RunPod endpoint instead of running locally.
 
-### Run test scripts
+### Run example scripts
 
 1. Ensure that the RunPod Handler API is still running.
-2. Change directory to the `tests` directory and run
+2. Change directory to the `examples` directory and run
    one of the scripts, for example:
 ```bash
-cd tests
+cd examples
 python3 all_1_source_into_all_1_target.py
 ```
 3. This will display the HTTP status code and the filename
@@ -61,6 +61,7 @@ python3 all_1_source_into_all_1_target.py
 ```
 Status code: 200
 Saving image: 792a7e9f-9c36-4d35-b408-0d45d8e2bbcb.jpg
+Total time taken for RunPod Serverless API call 14.0 seconds
 ```
 
 You can then open the output image (in this case

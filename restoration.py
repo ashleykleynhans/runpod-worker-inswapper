@@ -64,7 +64,6 @@ def face_restoration(img, background_enhance, face_upsample, upscale, codeformer
     """Run a single prediction on the model"""
     try: # global try
         # take the default setting for the demo
-        has_aligned = False
         only_center_face = False
         draw_box = False
         detection_model = "retinaface_resnet50"
@@ -95,19 +94,13 @@ def face_restoration(img, background_enhance, face_upsample, upscale, codeformer
         bg_upsampler = upsampler if background_enhance else None
         face_upsampler = upsampler if face_upsample else None
 
-        if has_aligned:
-            # the input faces are already cropped and aligned
-            img = cv2.resize(img, (512, 512), interpolation=cv2.INTER_LINEAR)
-            face_helper.is_gray = is_gray(img, threshold=5)
-            face_helper.cropped_faces = [img]
-        else:
-            face_helper.read_image(img)
-            # get face landmarks for each face
-            num_det_faces = face_helper.get_face_landmarks_5(
-            only_center_face=only_center_face, resize=640, eye_dist_threshold=5
-            )
-            # align and warp each face
-            face_helper.align_warp_face()
+        face_helper.read_image(img)
+        # get face landmarks for each face
+        num_det_faces = face_helper.get_face_landmarks_5(
+        only_center_face=only_center_face, resize=640, eye_dist_threshold=5
+        )
+        # align and warp each face
+        face_helper.align_warp_face()
 
         # face restoration for each cropped face
         for idx, cropped_face in enumerate(face_helper.cropped_faces):
@@ -136,25 +129,24 @@ def face_restoration(img, background_enhance, face_upsample, upscale, codeformer
             face_helper.add_restored_face(restored_face)
 
         # paste_back
-        if not has_aligned:
-            # upsample the background
-            if bg_upsampler is not None:
-                # Now only support RealESRGAN for upsampling background
-                bg_img = bg_upsampler.enhance(img, outscale=upscale)[0]
-            else:
-                bg_img = None
-            face_helper.get_inverse_affine(None)
-            # paste each restored face to the input image
-            if face_upsample and face_upsampler is not None:
-                restored_img = face_helper.paste_faces_to_input_image(
-                    upsample_img=bg_img,
-                    draw_box=draw_box,
-                    face_upsampler=face_upsampler,
-                )
-            else:
-                restored_img = face_helper.paste_faces_to_input_image(
-                    upsample_img=bg_img, draw_box=draw_box
-                )
+        # upsample the background
+        if bg_upsampler is not None:
+            # Now only support RealESRGAN for upsampling background
+            bg_img = bg_upsampler.enhance(img, outscale=upscale)[0]
+        else:
+            bg_img = None
+        face_helper.get_inverse_affine(None)
+        # paste each restored face to the input image
+        if face_upsample and face_upsampler is not None:
+            restored_img = face_helper.paste_faces_to_input_image(
+                upsample_img=bg_img,
+                draw_box=draw_box,
+                face_upsampler=face_upsampler,
+            )
+        else:
+            restored_img = face_helper.paste_faces_to_input_image(
+                upsample_img=bg_img, draw_box=draw_box
+            )
 
         restored_img = cv2.cvtColor(restored_img, cv2.COLOR_BGR2RGB)
         return restored_img

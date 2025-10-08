@@ -1,0 +1,29 @@
+[run]
+source = .
+omit =
+    */venv/*
+    */tests/*
+    */examples/*
+    */unit_tests/*
+    */CodeFormer/*
+    */__pycache__/*
+    */site-packages/*
+    config*.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    except Exception as error:
+        raise
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
