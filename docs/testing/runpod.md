@@ -44,6 +44,7 @@ of the output image, for example:
 ```
 Status code: 200
 Saving image: 792a7e9f-9c36-4d35-b408-0d45d8e2bbcb.jpg
+Total time taken for RunPod Serverless API call 14.0 seconds
 ```
 
 You can then open the output image (in this case
