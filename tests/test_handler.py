@@ -228,9 +228,11 @@ class TestDetermineFileExtension:
 class TestCleanUpTemporaryFiles:
     """Tests for clean_up_temporary_files function"""
 
+    @patch('handler.os.path.exists')
     @patch('handler.os.remove')
-    def test_clean_up_files(self, mock_remove):
+    def test_clean_up_files(self, mock_remove, mock_exists):
         """Test that temporary files are removed"""
+        mock_exists.return_value = True
         source_path = '/tmp/source.jpg'
         target_path = '/tmp/target.jpg'
 

@@ -668,3 +668,159 @@ class TestCompleteHandlerCoverage:
                 'PNG',
                 0
             )
+
+
+class TestErrorHandlingCoverage:
+    """Tests for complete error handling coverage"""
+
+    @patch('handler.process')
+    @patch('handler.cv2.cvtColor')
+    def test_process_image_conversion_error(self, mock_cvtColor, mock_process):
+        """Test error when target image conversion fails"""
+        import handler
+        handler.FACE_ANALYSER = Mock()
+
+        mock_cvtColor.side_effect = Exception("Image conversion failed")
+
+        with pytest.raises(Exception, match='Invalid target image format'):
+            process('job_id', [Image.new('RGB', (512, 512))],
+                   Image.new('RGB', (512, 512)), '-1', '-1', 0.0)
+
+    @patch('handler.Image.open')
+    @patch('handler.process')
+    def test_face_swap_image_load_error(self, mock_process, mock_image_open):
+        """Test error when loading source or target images fails"""
+        mock_image_open.side_effect = Exception("Cannot load image")
+
+        with pytest.raises(Exception, match='Failed to load source or target images'):
+            face_swap('job_id', '/tmp/source.jpg', '/tmp/target.jpg',
+                     '-1', '-1', True, False, False, 1, 0.5, 'JPEG', 0.0)
+
+    @patch('handler.base64.b64encode')
+    @patch('handler.Image.open')
+    @patch('handler.process')
+    def test_face_swap_encoding_error(self, mock_process, mock_image_open, mock_b64encode):
+        """Test error when encoding output image fails"""
+        mock_image_open.return_value = Image.new('RGB', (512, 512))
+        mock_process.return_value = Image.new('RGB', (512, 512))
+        mock_b64encode.side_effect = Exception("Encoding failed")
+
+        with pytest.raises(Exception, match='Failed to encode output image'):
+            face_swap('job_id', '/tmp/source.jpg', '/tmp/target.jpg',
+                     '-1', '-1', False, False, False, 1, 0.5, 'JPEG', 0.0)
+
+    @patch('handler.os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('handler.base64.b64decode')
+    def test_face_swap_api_invalid_source_image(self, mock_b64decode, mock_file, mock_exists):
+        """Test error when source image decoding fails"""
+        mock_exists.return_value = True
+        mock_b64decode.side_effect = Exception("Invalid base64")
+
+        job_input = {
+            'source_image': 'invalid_base64',
+            'target_image': 'iVBORw0Kgfake_png_data'
+        }
+
+        result = face_swap_api('job_id', job_input)
+
+        assert 'error' in result
+        assert 'Invalid source image data' in result['error']
+
+    @patch('handler.os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('handler.base64.b64decode')
+    def test_face_swap_api_invalid_target_image(self, mock_b64decode, mock_file, mock_exists):
+        """Test error when target image decoding fails"""
+        mock_exists.return_value = True
+        # First call succeeds (source), second call fails (target)
+        mock_b64decode.side_effect = [b'valid_source_data', Exception("Invalid base64")]
+
+        job_input = {
+            'source_image': '/9j/fake_jpeg_data',
+            'target_image': 'invalid_base64'
+        }
+
+        result = face_swap_api('job_id', job_input)
+
+        assert 'error' in result
+        assert 'Invalid target image data' in result['error']
+
+    @patch('handler.os.path.exists')
+    def test_face_swap_api_missing_source_image(self, mock_exists):
+        """Test error when source_image field is missing"""
+        mock_exists.return_value = True
+
+        job_input = {
+            'target_image': 'iVBORw0Kgfake_png_data'
+        }
+
+        result = face_swap_api('job_id', job_input)
+
+        assert 'error' in result
+        assert 'Missing required field: source_image' in result['error']
+
+    @patch('handler.os.path.exists')
+    def test_face_swap_api_missing_target_image(self, mock_exists):
+        """Test error when target_image field is missing"""
+        mock_exists.return_value = True
+
+        job_input = {
+            'source_image': '/9j/fake_jpeg_data'
+        }
+
+        result = face_swap_api('job_id', job_input)
+
+        assert 'error' in result
+        assert 'Missing required field: target_image' in result['error']
+
+    @patch('handler.os.remove')
+    @patch('handler.face_swap')
+    @patch('handler.clean_up_temporary_files')
+    @patch('handler.os.makedirs')
+    @patch('handler.os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('handler.base64.b64decode')
+    def test_face_swap_api_cleanup_success_error(self, mock_b64decode, mock_file, mock_exists,
+                                                  mock_makedirs, mock_cleanup, mock_face_swap, mock_remove):
+        """Test cleanup error handling on successful face swap"""
+        mock_exists.return_value = True
+        mock_b64decode.return_value = b'fake_image_data'
+        mock_face_swap.return_value = 'base64_result'
+        mock_cleanup.side_effect = Exception("Cleanup failed")
+
+        job_input = {
+            'source_image': '/9j/fake_jpeg_data',
+            'target_image': 'iVBORw0Kgfake_png_data'
+        }
+
+        result = face_swap_api('job_id', job_input)
+
+        # Should still return success even if cleanup fails
+        assert 'image' in result
+        assert result['image'] == 'base64_result'
+
+    @patch('handler.face_swap')
+    @patch('handler.clean_up_temporary_files')
+    @patch('handler.os.makedirs')
+    @patch('handler.os.path.exists')
+    @patch('builtins.open', new_callable=mock_open)
+    @patch('handler.base64.b64decode')
+    def test_face_swap_api_cleanup_exception_error(self, mock_b64decode, mock_file, mock_exists,
+                                                    mock_makedirs, mock_cleanup, mock_face_swap):
+        """Test cleanup error handling when face swap fails"""
+        mock_exists.return_value = True
+        mock_b64decode.return_value = b'fake_image_data'
+        mock_face_swap.side_effect = Exception("Processing failed")
+        mock_cleanup.side_effect = Exception("Cleanup also failed")
+
+        job_input = {
+            'source_image': '/9j/fake_jpeg_data',
+            'target_image': 'iVBORw0Kgfake_png_data'
+        }
+
+        result = face_swap_api('job_id', job_input)
+
+        # Should return error even if cleanup also fails
+        assert 'error' in result
+        assert result['error'] == 'Processing failed'

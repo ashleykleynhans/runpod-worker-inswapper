@@ -166,3 +166,4 @@ test_input.json
 *.jpg
 *.jpeg
 *.png
+.claude

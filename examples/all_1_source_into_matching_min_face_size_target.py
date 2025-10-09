@@ -12,6 +12,7 @@ FACE_UPSAMPLE = True
 UPSCALE = 1
 CODEFORMER_FIDELITY = 0.5
 OUTPUT_FORMAT = 'JPEG'
+MIN_FACE_SIZE = 30  # 30% of the image size
 
 
 if __name__ == '__main__':
@@ -28,7 +29,7 @@ if __name__ == '__main__':
             "upscale": UPSCALE,
             "codeformer_fidelity": CODEFORMER_FIDELITY,
             "output_format": OUTPUT_FORMAT,
-            "min_face_size": 30
+            "min_face_size": MIN_FACE_SIZE
         }
     }
 

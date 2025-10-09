@@ -100,8 +100,17 @@ def process(job_id: str,
 
     global MODEL, FACE_ANALYSER
 
-    target_img = cv2.cvtColor(np.array(target_img), cv2.COLOR_RGB2BGR)
+    try:
+        target_img = cv2.cvtColor(np.array(target_img), cv2.COLOR_RGB2BGR)
+    except Exception as e:
+        logger.error(f'Failed to convert target image: {str(e)}', job_id)
+        raise Exception(f'Invalid target image format: {str(e)}')
+
     target_faces = get_many_faces(FACE_ANALYSER, target_img, min_face_size)
+
+    if target_faces is None or len(target_faces) == 0:
+        raise Exception('The target image does not contain any faces!')
+
     num_target_faces = len(target_faces)
     num_source_images = len(source_img)
 
@@ -118,7 +127,7 @@ def process(job_id: str,
                 source_index = i
                 target_index = i
 
-                if source_faces is None:
+                if source_faces is None or len(source_faces) == 0:
                     raise Exception('No source faces found!')
 
                 temp_frame = swap_face(
@@ -145,6 +154,9 @@ def process(job_id: str,
 
                 for target_index in target_indexes:
                     target_index = int(target_index)
+
+                    if target_index >= num_target_faces:
+                        raise ValueError(f'Target index {target_index} is out of range. Target image only has {num_target_faces} face(s) (indexes 0-{num_target_faces-1}).')
 
                     temp_frame = swap_face(
                         source_faces,
@@ -242,9 +254,13 @@ def face_swap(job_id: str,
 
     global TORCH_DEVICE, CODEFORMER_DEVICE, CODEFORMER_NET
 
-    source_img_paths = src_img_path.split(';')
-    source_img = [Image.open(img_path) for img_path in source_img_paths]
-    target_img = Image.open(target_img_path)
+    try:
+        source_img_paths = src_img_path.split(';')
+        source_img = [Image.open(img_path) for img_path in source_img_paths]
+        target_img = Image.open(target_img_path)
+    except Exception as e:
+        logger.error(f'Failed to load images: {str(e)}', job_id)
+        raise Exception(f'Failed to load source or target images: {str(e)}')
 
     try:
         logger.info('Performing face swap', job_id)
@@ -258,13 +274,14 @@ def face_swap(job_id: str,
         )
         logger.info('Face swap complete', job_id)
     except Exception as e:
-        raise
+        logger.error(f'Face swap failed: {str(e)}', job_id)
+        raise Exception(f'Face swap processing failed: {str(e)}')
 
     if face_restore:
-        result_image = cv2.cvtColor(np.array(result_image), cv2.COLOR_RGB2BGR)
-        logger.info('Performing face restoration using CodeFormer', job_id)
-
         try:
+            result_image = cv2.cvtColor(np.array(result_image), cv2.COLOR_RGB2BGR)
+            logger.info('Performing face restoration using CodeFormer', job_id)
+
             result_image = face_restoration(
                 result_image,
                 background_enhance,
@@ -275,17 +292,24 @@ def face_swap(job_id: str,
                 CODEFORMER_NET,
                 CODEFORMER_DEVICE
             )
+
+            logger.info('CodeFormer face restoration completed successfully', job_id)
+            result_image = Image.fromarray(result_image)
         except Exception as e:
-            raise
+            logger.error(f'Face restoration failed: {str(e)}', job_id)
+            raise Exception(f'Face restoration failed: {str(e)}')
 
-        logger.info('CodeFormer face restoration completed successfully', job_id)
-        result_image = Image.fromarray(result_image)
+    try:
+        output_buffer = io.BytesIO()
+        result_image.save(output_buffer, format=output_format)
+        image_data = output_buffer.getvalue()
+        encoded_image = base64.b64encode(image_data).decode('utf-8')
 
-    output_buffer = io.BytesIO()
-    result_image.save(output_buffer, format=output_format)
-    image_data = output_buffer.getvalue()
-
-    return base64.b64encode(image_data).decode('utf-8')
+        logger.debug(f'Output image size: {len(encoded_image)} characters', job_id)
+        return encoded_image
+    except Exception as e:
+        logger.error(f'Failed to encode output image: {str(e)}', job_id)
+        raise Exception(f'Failed to encode output image: {str(e)}')
 
 
 def determine_file_extension(image_data):
@@ -304,35 +328,66 @@ def determine_file_extension(image_data):
 
 
 def clean_up_temporary_files(source_image_path: str, target_image_path: str):
-    os.remove(source_image_path)
-    os.remove(target_image_path)
+    if source_image_path and os.path.exists(source_image_path):
+        os.remove(source_image_path)
+    if target_image_path and os.path.exists(target_image_path):
+        os.remove(target_image_path)
 
 
 def face_swap_api(job_id: str, job_input: dict):
-    if not os.path.exists(TMP_PATH):
-        os.makedirs(TMP_PATH)
+    source_image_path = None
+    target_image_path = None
 
-    unique_id = uuid.uuid4()
-    source_image_data = job_input['source_image']
-    target_image_data = job_input['target_image']
+    try:
+        if not os.path.exists(TMP_PATH):
+            os.makedirs(TMP_PATH)
 
-    # Decode the source image data
-    source_image = base64.b64decode(source_image_data)
-    source_file_extension = determine_file_extension(source_image_data)
-    source_image_path = f'{TMP_PATH}/source_{unique_id}{source_file_extension}'
+        unique_id = uuid.uuid4()
 
-    # Save the source image to disk
-    with open(source_image_path, 'wb') as source_file:
-        source_file.write(source_image)
+        # Validate required fields
+        if 'source_image' not in job_input:
+            raise Exception('Missing required field: source_image')
+        if 'target_image' not in job_input:
+            raise Exception('Missing required field: target_image')
 
-    # Decode the target image data
-    target_image = base64.b64decode(target_image_data)
-    target_file_extension = determine_file_extension(target_image_data)
-    target_image_path = f'{TMP_PATH}/target_{unique_id}{target_file_extension}'
+        source_image_data = job_input['source_image']
+        target_image_data = job_input['target_image']
 
-    # Save the target image to disk
-    with open(target_image_path, 'wb') as target_file:
-        target_file.write(target_image)
+        # Decode the source image data
+        try:
+            source_image = base64.b64decode(source_image_data)
+            source_file_extension = determine_file_extension(source_image_data)
+            source_image_path = f'{TMP_PATH}/source_{unique_id}{source_file_extension}'
+
+            # Save the source image to disk
+            with open(source_image_path, 'wb') as source_file:
+                source_file.write(source_image)
+        except Exception as e:
+            logger.error(f'Failed to decode/save source image: {str(e)}', job_id)
+            raise Exception(f'Invalid source image data: {str(e)}')
+
+        # Decode the target image data
+        try:
+            target_image = base64.b64decode(target_image_data)
+            target_file_extension = determine_file_extension(target_image_data)
+            target_image_path = f'{TMP_PATH}/target_{unique_id}{target_file_extension}'
+
+            # Save the target image to disk
+            with open(target_image_path, 'wb') as target_file:
+                target_file.write(target_image)
+        except Exception as e:
+            logger.error(f'Failed to decode/save target image: {str(e)}', job_id)
+            try:
+                clean_up_temporary_files(source_image_path, target_image_path)
+            except:
+                pass
+            raise Exception(f'Invalid target image data: {str(e)}')
+    except Exception as e:
+        logger.error(f'Early validation error: {str(e)}', job_id)
+        return {
+            'error': str(e),
+            'output': traceback.format_exc()
+        }
 
     try:
         logger.info(f'Source indexes: {job_input.get("source_indexes", "-1")}', job_id)
@@ -360,14 +415,24 @@ def face_swap_api(job_id: str, job_input: dict):
             job_input.get('min_face_size', 0.0)
         )
 
-        clean_up_temporary_files(source_image_path, target_image_path)
+        # Clean up temporary files
+        try:
+            clean_up_temporary_files(source_image_path, target_image_path)
+        except Exception as cleanup_error:
+            logger.error(f'Failed to clean up temporary files: {str(cleanup_error)}', job_id)
 
         return {
             'image': result_image
         }
     except Exception as e:
-        logger.error(f'An exception was raised: {e}', job_id)
-        clean_up_temporary_files(source_image_path, target_image_path)
+        logger.error(f'Face swap API error: {str(e)}', job_id)
+        logger.debug(f'Error traceback: {traceback.format_exc()}', job_id)
+
+        # Clean up temporary files even on error
+        try:
+            clean_up_temporary_files(source_image_path, target_image_path)
+        except Exception as cleanup_error:
+            logger.error(f'Failed to clean up temporary files after error: {str(cleanup_error)}', job_id)
 
         return {
             'error': str(e),
