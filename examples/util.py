@@ -51,12 +51,43 @@ def handle_response(resp_json, timer):
     if not output:
         print("No output found in the response.")
 
+    # Calculate response size
+    response_json = json.dumps(resp_json)
+    response_size_bytes = len(response_json.encode('utf-8'))
+    _, response_size_str = calculate_payload_size(resp_json)
+    print(f'Response size: {response_size_str} ({response_size_bytes:,} bytes)')
+
     if 'image' in output:
+        # Calculate the size of just the base64 image
+        image_size_bytes = len(output['image'])
+        if image_size_bytes < 1024 * 1024:
+            image_size_kb = image_size_bytes / 1024
+            print(f'Image size (base64): {image_size_kb:.2f} KB ({image_size_bytes:,} bytes)')
+        else:
+            image_size_mb = image_size_bytes / (1024 * 1024)
+            print(f'Image size (base64): {image_size_mb:.2f} MB ({image_size_bytes:,} bytes)')
+
         save_result_image(resp_json)
     else:
         print(json.dumps(resp_json, indent=4, default=str))
 
     print(f'Total time taken for RunPod Serverless API call {total_time} seconds')
+
+
+def calculate_payload_size(payload):
+    """Calculate the size of the payload in bytes and return human-readable format"""
+    payload_json = json.dumps(payload)
+    size_bytes = len(payload_json.encode('utf-8'))
+
+    # Convert to human-readable format
+    if size_bytes < 1024:
+        return size_bytes, f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        size_kb = size_bytes / 1024
+        return size_bytes, f"{size_kb:.2f} KB"
+    else:
+        size_mb = size_bytes / (1024 * 1024)
+        return size_bytes, f"{size_mb:.2f} MB"
 
 
 def post_request(payload, runtype='runsync'):
@@ -69,6 +100,10 @@ def post_request(payload, runtype='runsync'):
         base_url = f'https://api.runpod.ai/v2/{runpod_endpoint_id}'
     else:
         base_url = f'http://127.0.0.1:8000'
+
+    # Calculate and display payload size
+    size_bytes, size_str = calculate_payload_size(payload)
+    print(f'Payload size: {size_str} ({size_bytes:,} bytes)')
 
     r = requests.post(
         f'{base_url}/{runtype}',
