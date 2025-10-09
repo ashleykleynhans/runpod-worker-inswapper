@@ -335,29 +335,29 @@ def face_swap_api(job_id: str, job_input: dict):
         target_file.write(target_image)
 
     try:
-        logger.info(f'Source indexes: {job_input["source_indexes"]}', job_id)
-        logger.info(f'Target indexes: {job_input["target_indexes"]}', job_id)
-        logger.info(f'Background enhance: {job_input["background_enhance"]}', job_id)
-        logger.info(f'Face Restoration: {job_input["face_restore"]}', job_id)
-        logger.info(f'Face Upsampling: {job_input["face_upsample"]}', job_id)
-        logger.info(f'Upscale: {job_input["upscale"]}', job_id)
-        logger.info(f'Codeformer Fidelity: {job_input["codeformer_fidelity"]}', job_id)
-        logger.info(f'Output Format: {job_input["output_format"]}', job_id)
-        logger.info(f'Min Face Size: {job_input["min_face_size"]}', job_id)
+        logger.info(f'Source indexes: {job_input.get("source_indexes", "-1")}', job_id)
+        logger.info(f'Target indexes: {job_input.get("target_indexes", "-1")}', job_id)
+        logger.info(f'Background enhance: {job_input.get("background_enhance", True)}', job_id)
+        logger.info(f'Face Restoration: {job_input.get("face_restore", True)}', job_id)
+        logger.info(f'Face Upsampling: {job_input.get("face_upsample", True)}', job_id)
+        logger.info(f'Upscale: {job_input.get("upscale", 1)}', job_id)
+        logger.info(f'Codeformer Fidelity: {job_input.get("codeformer_fidelity", 0.5)}', job_id)
+        logger.info(f'Output Format: {job_input.get("output_format", "JPEG")}', job_id)
+        logger.info(f'Min Face Size: {job_input.get("min_face_size", 0.0)}', job_id)
 
         result_image = face_swap(
             job_id,
             source_image_path,
             target_image_path,
-            job_input['source_indexes'],
-            job_input['target_indexes'],
-            job_input['background_enhance'],
-            job_input['face_restore'],
-            job_input['face_upsample'],
-            job_input['upscale'],
-            job_input['codeformer_fidelity'],
-            job_input['output_format'],
-            job_input['min_face_size']
+            job_input.get('source_indexes', '-1'),
+            job_input.get('target_indexes', '-1'),
+            job_input.get('background_enhance', True),
+            job_input.get('face_restore', True),
+            job_input.get('face_upsample', True),
+            job_input.get('upscale', 1),
+            job_input.get('codeformer_fidelity', 0.5),
+            job_input.get('output_format', 'JPEG'),
+            job_input.get('min_face_size', 0.0)
         )
 
         clean_up_temporary_files(source_image_path, target_image_path)

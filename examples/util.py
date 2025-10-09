@@ -46,7 +46,12 @@ def save_result_image(resp_json):
 def handle_response(resp_json, timer):
     total_time = timer.get_elapsed_time()
 
-    if resp_json['output'] is not None and 'image' in resp_json['output']:
+    output = resp_json.get('output', {})
+
+    if not output:
+        print("No output found in the response.")
+
+    if 'image' in output:
         save_result_image(resp_json)
     else:
         print(json.dumps(resp_json, indent=4, default=str))
