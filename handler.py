@@ -106,7 +106,8 @@ def process(job_id: str,
         logger.error(f'Failed to convert target image: {str(e)}', job_id)
         raise Exception(f'Invalid target image format: {str(e)}')
 
-    target_faces = get_many_faces(FACE_ANALYSER, target_img, min_face_size)
+    # Disable min_face_size for the target image
+    target_faces = get_many_faces(FACE_ANALYSER, target_img)
 
     if target_faces is None or len(target_faces) == 0:
         raise Exception('The target image does not contain any faces!')
