@@ -2,7 +2,7 @@
 # Replace the single source face into the first face in the target image
 from util import post_request, encode_image_to_base64
 
-SOURCE_IMAGE = '../data/src.jpg'
+SOURCE_IMAGE = '../data/min-face-size.jpg'
 TARGET_IMAGE = '../data/hp-3faces.jpeg'
 SOURCE_INDEXES = '-1'
 TARGET_INDEXES = '-1'
@@ -12,7 +12,7 @@ FACE_UPSAMPLE = True
 UPSCALE = 1
 CODEFORMER_FIDELITY = 0.5
 OUTPUT_FORMAT = 'JPEG'
-MIN_FACE_SIZE = 30  # 30% of the image size
+MIN_FACE_SIZE = 0  # 30% of the source image size
 
 
 if __name__ == '__main__':
