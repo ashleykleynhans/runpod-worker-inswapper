@@ -56,6 +56,8 @@ docs/api/swap-single-source-face-into-specific-target-face.md)
 docs/api/swap-two-faces-into-specific-target-faces.md)
 * [Swap two specific faces from source image containing multiple faces into 2 specific target faces in a target image containing multiple faces](
   docs/api/swap-specific-faces-into-specific-target-faces.md)
+* [Swap a single source face into a specific target face based on the min face size](
+  docs/api/filter-small-faces-with-min-face-size.md)
 
 ### Endpoint Status Codes
 
