@@ -1,4 +1,5 @@
-FROM nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04
+ARG CUDA_VERSION
+FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -40,7 +41,9 @@ RUN apt update && \
 WORKDIR /workspace
 
 # Install Torch
-RUN pip3 install --no-cache-dir torch==2.6.0+cu124 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+ARG INDEX_URL
+ARG TORCH_VERSION
+RUN pip3 install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio --index-url ${INDEX_URL}
 
 # Install Inswapper Serverless Worker
 RUN git clone https://github.com/ashleykleynhans/runpod-worker-inswapper.git && \
