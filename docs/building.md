@@ -2,7 +2,7 @@
 
 You can either use my pre-built Docker image:
 ```
-ashleykza/runpod-worker-inswapper:5.1.1
+ashleykza/runpod-worker-inswapper:5.2.0
 ```
 
 Or alternatively, you can build it yourself by following the
