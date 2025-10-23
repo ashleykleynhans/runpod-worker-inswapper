@@ -41,8 +41,8 @@ RUN apt update && \
 WORKDIR /workspace
 
 # Install Torch
-ARG INDEX_URL
-ARG TORCH_VERSION
+ARG INDEX_URL="https://download.pytorch.org/whl/cu124"
+ARG TORCH_VERSION="2.6.0+cu124"
 RUN pip3 install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio --index-url ${INDEX_URL}
 
 # Install Inswapper Serverless Worker
