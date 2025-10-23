@@ -48,15 +48,35 @@ jobs:
           fi
 
           # Check if docker-bake.hcl was modified
-          git diff HEAD^ HEAD docker-bake.hcl > /tmp/diff.txt
-
-          if grep -E '^\+.*variable "RELEASE"' /tmp/diff.txt || \
-             grep -E '^\+.*default = ' /tmp/diff.txt | grep -E 'RELEASE' -B 2; then
-            echo "should_build=true" >> $GITHUB_OUTPUT
-            echo "RELEASE changed - will build"
-          else
+          if ! git diff HEAD^ HEAD --name-only | grep -q "docker-bake.hcl"; then
             echo "should_build=false" >> $GITHUB_OUTPUT
-            echo "No RELEASE changes detected - skipping build"
+            echo "docker-bake.hcl not modified - skipping build"
+            exit 0
+          fi
+
+          # Get RELEASE value from current commit
+          CURRENT_RELEASE=$(grep 'variable "RELEASE"' -A 2 docker-bake.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
+
+          # Get RELEASE value from previous commit
+          git show HEAD^:docker-bake.hcl > /tmp/docker-bake-prev.hcl
+          PREV_RELEASE=$(grep 'variable "RELEASE"' -A 2 /tmp/docker-bake-prev.hcl | grep 'default' | sed 's/.*"\(.*\)"/\1/')
+
+          echo "Previous RELEASE: ${PREV_RELEASE}"
+          echo "Current RELEASE: ${CURRENT_RELEASE}"
+
+          # Compare RELEASE values
+          if [ "${PREV_RELEASE}" != "${CURRENT_RELEASE}" ]; then
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "RELEASE changed from '${PREV_RELEASE}' to '${CURRENT_RELEASE}' - will build"
+          else
+            # Also check for any other relevant changes (APP, REGISTRY_USER, or structural changes)
+            if git diff HEAD^ HEAD docker-bake.hcl | grep -E '^\+|^\-' | grep -v '^+++\|^---' | grep -q .; then
+              echo "should_build=true" >> $GITHUB_OUTPUT
+              echo "Other changes detected in docker-bake.hcl - will build"
+            else
+              echo "should_build=false" >> $GITHUB_OUTPUT
+              echo "No significant changes detected - skipping build"
+            fi
           fi
 
   build-and-push:
