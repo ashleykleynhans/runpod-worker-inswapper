@@ -21,6 +21,7 @@
     "gpuTypeId": "NVIDIA GeForce RTX 4090",
     "gpuCount": 1,
     "allowedCudaVersions": [
+      "12.9",
       "12.8",
       "12.7",
       "12.6",
