@@ -6,7 +6,7 @@ insightface>=0.7.3
 lmdb
 lpips
 numpy
-onnx==1.17.0
+onnx==1.21.0rc1
 onnxruntime
 opencv-python
 protobuf
