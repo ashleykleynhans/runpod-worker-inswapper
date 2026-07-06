@@ -14,6 +14,11 @@ from typing import List, Union
 from PIL import Image
 from restoration import *
 from schemas.input import INPUT_SCHEMA
+from face_swapper import get_face_swapper_model, swap_face_enhanced
+from face_swapper_models import (
+    validate_face_swapper_params,
+    get_default_resolution
+)
 
 FACE_SWAP_MODEL = 'checkpoints/inswapper_128.onnx'
 TMP_PATH = '/tmp/inswapper'
@@ -79,7 +84,10 @@ def swap_face(source_faces,
               target_faces,
               source_index,
               target_index,
-              temp_frame):
+              temp_frame,
+              face_swap_model=None,
+              face_swapper_model_name='inswapper_128',
+              face_swapper_weight=1.0):
     """
     paste source_face on target image
     """
@@ -88,7 +96,20 @@ def swap_face(source_faces,
     source_face = source_faces[source_index]
     target_face = target_faces[target_index]
 
-    return FACE_SWAPPER.get(temp_frame, target_face, source_face, paste_back=True)
+    # Route to appropriate swapper
+    if face_swapper_model_name == 'inswapper_128' and face_swapper_weight == 1.0 and face_swap_model is None:
+        # Use existing FACE_SWAPPER for backward compatibility
+        return FACE_SWAPPER.get(temp_frame, target_face, source_face, paste_back=True)
+    else:
+        # Use new enhanced swapper
+        model = face_swap_model if face_swap_model is not None else FACE_SWAPPER
+        return swap_face_enhanced(
+            source_face,
+            target_face,
+            temp_frame,
+            model,
+            face_swapper_weight
+        )
 
 
 def process(job_id: str,
@@ -96,9 +117,29 @@ def process(job_id: str,
             target_img: Image.Image,
             source_indexes: str,
             target_indexes: str,
-            min_face_size: float = 0.0):
+            min_face_size: float = 0.0,
+            face_swapper_model: str = 'inswapper_128',
+            face_swapper_resolution: str = None,
+            face_swapper_weight: float = 1.0):
 
     global MODEL, FACE_ANALYSER
+
+    # Validate face swapper parameters
+    if face_swapper_resolution is None:
+        face_swapper_resolution = get_default_resolution(face_swapper_model)
+
+    try:
+        validate_face_swapper_params(face_swapper_model, face_swapper_resolution)
+    except ValueError as e:
+        logger.error(f"Validation error: {str(e)}", job_id)
+        raise
+
+    # Validate weight range
+    if not 0.0 <= face_swapper_weight <= 1.0:
+        raise ValueError(f"face_swapper_weight must be between 0.0 and 1.0, got {face_swapper_weight}")
+
+    # Load face swapper model (lazy loading)
+    face_swap_model = get_face_swapper_model(face_swapper_model)
 
     try:
         target_img = cv2.cvtColor(np.array(target_img), cv2.COLOR_RGB2BGR)
@@ -136,7 +177,10 @@ def process(job_id: str,
                     target_faces,
                     source_index,
                     target_index,
-                    temp_frame
+                    temp_frame,
+                    face_swap_model,
+                    face_swapper_model,
+                    face_swapper_weight
                 )
         elif num_source_images == 1:
             # detect source faces that will be replaced into the target image
@@ -251,7 +295,10 @@ def face_swap(job_id: str,
               upscale,
               codeformer_fidelity,
               output_format,
-              min_face_size):
+              min_face_size,
+              face_swapper_model='inswapper_128',
+              face_swapper_resolution=None,
+              face_swapper_weight=1.0):
 
     global TORCH_DEVICE, CODEFORMER_DEVICE, CODEFORMER_NET
 
@@ -271,7 +318,10 @@ def face_swap(job_id: str,
             target_img,
             source_indexes,
             target_indexes,
-            min_face_size
+            min_face_size,
+            face_swapper_model,
+            face_swapper_resolution,
+            face_swapper_weight
         )
         logger.info('Face swap complete', job_id)
     except Exception as e:
@@ -400,6 +450,9 @@ def face_swap_api(job_id: str, job_input: dict):
         logger.info(f'Codeformer Fidelity: {job_input.get("codeformer_fidelity", 0.5)}', job_id)
         logger.info(f'Output Format: {job_input.get("output_format", "JPEG")}', job_id)
         logger.info(f'Min Face Size: {job_input.get("min_face_size", 0.0)}', job_id)
+        logger.info(f'Face Swapper Model: {job_input.get("face_swapper_model", "inswapper_128")}', job_id)
+        logger.info(f'Face Swapper Resolution: {job_input.get("face_swapper_resolution")}', job_id)
+        logger.info(f'Face Swapper Weight: {job_input.get("face_swapper_weight", 1.0)}', job_id)
 
         result_image = face_swap(
             job_id,
@@ -413,7 +466,10 @@ def face_swap_api(job_id: str, job_input: dict):
             job_input.get('upscale', 1),
             job_input.get('codeformer_fidelity', 0.5),
             job_input.get('output_format', 'JPEG'),
-            job_input.get('min_face_size', 0.0)
+            job_input.get('min_face_size', 0.0),
+            job_input.get('face_swapper_model', 'inswapper_128'),
+            job_input.get('face_swapper_resolution'),
+            job_input.get('face_swapper_weight', 1.0)
         )
 
         # Clean up temporary files
