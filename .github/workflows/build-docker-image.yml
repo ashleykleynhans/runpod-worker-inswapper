@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - facefusion
     paths:
       - 'docker-bake.hcl'
   workflow_dispatch:
