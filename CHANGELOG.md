@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.0.0] - 2026-07-06
+## [6.0.0] - 2026-07-06
 
 ### Added
 - Support for 12 additional face swap models from FaceFusion
