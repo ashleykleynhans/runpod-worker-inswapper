@@ -18,6 +18,62 @@ swapping AI tasks.
 The worker uses the `inswapper_128.onnx` model by [InsightFace](
 https://insightface.ai/).
 
+## Face Swapper Models
+
+The worker supports 13 different face swap models with varying quality/speed trade-offs.
+
+### Available Models
+
+- `inswapper_128` (default) - Original balanced quality/speed model
+- `inswapper_128_fp16` - Faster FP16 version
+- `simswap_256` - High quality
+- `simswap_unofficial_512` - Highest quality (slower)
+- `ghost_1_256`, `ghost_2_256`, `ghost_3_256` - Ghost model variants
+- `hyperswap_1a_256`, `hyperswap_1b_256`, `hyperswap_1c_256` - Hyperswap variants
+- `blendswap_256` - Blend-focused model
+- `uniface_256` - Universal face model
+- `hififace_unofficial_256` - High fidelity variant
+
+### Model Selection Examples
+
+**High quality swap:**
+```json
+{
+  "source_image": "base64...",
+  "target_image": "base64...",
+  "face_swapper_model": "simswap_unofficial_512",
+  "face_swapper_resolution": "1024x1024"
+}
+```
+
+**Fast inference:**
+```json
+{
+  "source_image": "base64...",
+  "target_image": "base64...",
+  "face_swapper_model": "inswapper_128_fp16",
+  "face_swapper_resolution": "256x256"
+}
+```
+
+**Subtle blend:**
+```json
+{
+  "source_image": "base64...",
+  "target_image": "base64...",
+  "face_swapper_model": "uniface_256",
+  "face_swapper_weight": 0.7
+}
+```
+
+### Parameters
+
+- `face_swapper_model` (string, optional, default: "inswapper_128"): Model to use
+- `face_swapper_resolution` (string, optional): Resolution for inference (auto-selects if not specified)
+- `face_swapper_weight` (number, optional, default: 1.0): Blend weight (0.0-1.0)
+
+See [Face Swapper Models API Documentation](docs/api/face-swapper-models.md) for complete reference.
+
 ## Testing
 
 1. [Local Testing](docs/testing/local.md)
