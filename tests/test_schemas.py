@@ -113,3 +113,20 @@ class TestInputSchema:
             # If not required, must have default
             if not field_config['required']:
                 assert 'default' in field_config
+
+    def test_input_schema_face_swapper_model_optional(self):
+        """face_swapper_model should be optional with default"""
+        assert 'face_swapper_model' in INPUT_SCHEMA
+        assert INPUT_SCHEMA['face_swapper_model']['required'] is False
+        assert INPUT_SCHEMA['face_swapper_model']['default'] == 'inswapper_128'
+
+    def test_input_schema_face_swapper_resolution_optional(self):
+        """face_swapper_resolution should be optional"""
+        assert 'face_swapper_resolution' in INPUT_SCHEMA
+        assert INPUT_SCHEMA['face_swapper_resolution']['required'] is False
+
+    def test_input_schema_face_swapper_weight_optional(self):
+        """face_swapper_weight should be optional with default 1.0"""
+        assert 'face_swapper_weight' in INPUT_SCHEMA
+        assert INPUT_SCHEMA['face_swapper_weight']['required'] is False
+        assert INPUT_SCHEMA['face_swapper_weight']['default'] == 1.0

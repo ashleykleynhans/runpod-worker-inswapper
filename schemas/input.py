@@ -55,5 +55,20 @@ INPUT_SCHEMA = {
         'type': float,
         'required': False,
         'default': 0.0
+    },
+    'face_swapper_model': {
+        'type': str,
+        'required': False,
+        'default': 'inswapper_128'
+    },
+    'face_swapper_resolution': {
+        'type': str,
+        'required': False,
+        'default': None
+    },
+    'face_swapper_weight': {
+        'type': float,
+        'required': False,
+        'default': 1.0
     }
 }
