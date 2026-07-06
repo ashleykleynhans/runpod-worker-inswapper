@@ -59,16 +59,12 @@ RUN cd /workspace/runpod-worker-inswapper && \
     cd checkpoints && \
     # Existing inswapper_128 (keep for backward compat)
     wget -O inswapper_128.onnx "https://huggingface.co/ashleykleynhans/inswapper/resolve/main/inswapper_128.onnx?download=true" && \
-    # NEW: Download all face swapper models
+    # NEW: Download all available face swapper models from FaceFusion
     cd face_swapper && \
     wget -O blendswap_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/blendswap_256.onnx" && \
-    wget -O ghost_1_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ghost_unet_1_256.onnx" && \
-    wget -O ghost_2_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ghost_unet_2_256.onnx" && \
-    wget -O ghost_3_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ghost_unet_3_256.onnx" && \
-    wget -O hififace_unofficial_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/hififace_unofficial_256.onnx" && \
-    wget -O hyperswap_1a_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/hyperswap_unet_1a_256.onnx" && \
-    wget -O hyperswap_1b_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/hyperswap_unet_1b_256.onnx" && \
-    wget -O hyperswap_1c_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/hyperswap_unet_1c_256.onnx" && \
+    wget -O ghost_1_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ghost_1_256.onnx" && \
+    wget -O ghost_2_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ghost_2_256.onnx" && \
+    wget -O ghost_3_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ghost_3_256.onnx" && \
     wget -O inswapper_128_fp16.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/inswapper_128_fp16.onnx" && \
     wget -O simswap_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/simswap_256.onnx" && \
     wget -O simswap_unofficial_512.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/simswap_unofficial_512.onnx" && \

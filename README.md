@@ -20,7 +20,7 @@ https://insightface.ai/).
 
 ## Face Swapper Models
 
-The worker supports 13 different face swap models with varying quality/speed trade-offs.
+The worker supports 9 different face swap models with varying quality/speed trade-offs.
 
 ### Available Models
 
@@ -29,10 +29,8 @@ The worker supports 13 different face swap models with varying quality/speed tra
 - `simswap_256` - High quality
 - `simswap_unofficial_512` - Highest quality (slower)
 - `ghost_1_256`, `ghost_2_256`, `ghost_3_256` - Ghost model variants
-- `hyperswap_1a_256`, `hyperswap_1b_256`, `hyperswap_1c_256` - Hyperswap variants
 - `blendswap_256` - Blend-focused model
 - `uniface_256` - Universal face model
-- `hififace_unofficial_256` - High fidelity variant
 
 ### Model Selection Examples
 

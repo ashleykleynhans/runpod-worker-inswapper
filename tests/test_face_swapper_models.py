@@ -9,8 +9,8 @@ from face_swapper_models import (
 
 
 def test_face_swapper_model_set_exists():
-    """Verify all 13 models are defined"""
-    assert len(FACE_SWAPPER_MODEL_SET) == 13
+    """Verify all 9 models are defined"""
+    assert len(FACE_SWAPPER_MODEL_SET) == 9
     assert 'inswapper_128' in FACE_SWAPPER_MODEL_SET
     assert 'simswap_256' in FACE_SWAPPER_MODEL_SET
 

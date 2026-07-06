@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Runpod Inswapper worker supports 13 face swap models with different quality/speed characteristics.
+The Runpod Inswapper worker supports 9 face swap models with different quality/speed characteristics.
 
 ## Parameters
 
@@ -17,8 +17,6 @@ Selects which face swap model to use for inference.
 **Valid values:**
 - `blendswap_256`
 - `ghost_1_256`, `ghost_2_256`, `ghost_3_256`
-- `hififace_unofficial_256`
-- `hyperswap_1a_256`, `hyperswap_1b_256`, `hyperswap_1c_256`
 - `inswapper_128` (default)
 - `inswapper_128_fp16`
 - `simswap_256`
@@ -63,10 +61,6 @@ Controls blending between original and swapped face.
 | ghost_1_256 | 256x256, 512x512, 768x768, 1024x1024 |
 | ghost_2_256 | 256x256, 512x512, 768x768, 1024x1024 |
 | ghost_3_256 | 256x256, 512x512, 768x768, 1024x1024 |
-| hififace_unofficial_256 | 256x256, 512x512, 768x768, 1024x1024 |
-| hyperswap_1a_256 | 256x256, 512x512, 768x768, 1024x1024 |
-| hyperswap_1b_256 | 256x256, 512x512, 768x768, 1024x1024 |
-| hyperswap_1c_256 | 256x256, 512x512, 768x768, 1024x1024 |
 | inswapper_128 | 128x128, 256x256, 384x384, 512x512, 768x768, 1024x1024 |
 | inswapper_128_fp16 | 128x128, 256x256, 384x384, 512x512, 768x768, 1024x1024 |
 | simswap_256 | 256x256, 512x512, 768x768, 1024x1024 |
