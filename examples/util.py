@@ -160,12 +160,25 @@ def post_request(payload, runtype='runsync'):
                             request_in_queue = False
                             print(f'ERROR: Invalid status response from RunPod status endpoint')
                             print(json.dumps(resp_json, indent=4, default=str))
-            elif job_status == STATUS_COMPLETED \
-                    and 'output' in resp_json \
-                    and 'status' in resp_json['output'] \
-                    and resp_json['output']['status'] == 'error':
-                print(f'ERROR: {resp_json["output"]["message"]}')
+            elif job_status == STATUS_COMPLETED:
+                if 'output' in resp_json:
+                    if (isinstance(resp_json['output'], dict)
+                            and resp_json['output'].get('status') == 'error'):
+                        print(f'ERROR: {resp_json["output"]["message"]}')
+                    else:
+                        handle_response(resp_json, timer)
+                else:
+                    print(f'ERROR: Request completed but no output returned')
+                    print(json.dumps(resp_json, indent=4, default=str))
+            elif job_status == STATUS_FAILED:
+                print(f'ERROR: RunPod request failed')
+                print(json.dumps(resp_json, indent=4, default=str))
+            elif job_status == STATUS_TIMED_OUT:
+                print(f'ERROR: RunPod request timed out')
+            elif job_status == STATUS_CANCELLED:
+                print(f'ERROR: RunPod request was cancelled')
             else:
+                print(f'ERROR: Unknown status: {job_status}')
                 print(json.dumps(resp_json, indent=4, default=str))
     else:
         print(f'ERROR: {r.content}')
