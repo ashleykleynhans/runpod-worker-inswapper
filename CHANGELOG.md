@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.2] - 2026-07-07
+
+### Fixed
+- Bypass insightface ModelRouter for non-128x128 swapper models with custom _SwapperModel
+- Add proper error handling for invalid ONNX, corrupt initializers, and inference failures
+
 ## [6.0.1] - 2026-07-07
 
 ### Fixed
