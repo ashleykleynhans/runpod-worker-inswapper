@@ -72,6 +72,56 @@ The worker supports 9 different face swap models with varying quality/speed trad
 
 See [Face Swapper Models API Documentation](docs/api/face-swapper-models.md) for complete reference.
 
+## Examples
+
+Each model has its own `examples/` subdirectory with runnable Python scripts. The
+`inswapper_128/` directory contains the full set of face indexing scenarios; all
+other model directories contain `all_1_source_into_all_1_target.py` with
+model-appropriate defaults.
+
+```
+examples/
+├── util.py                              # shared request helpers
+├── inswapper_128/                       # default model (all 8 scenarios)
+│   ├── all_1_source_into_all_1_target.py
+│   ├── all_1_source_into_first_1_targets.py
+│   ├── all_1_source_into_matching_min_face_size_target.py
+│   ├── all_1_source_single_into_index_in_3_targets.py
+│   ├── all_2_source_into_all_2_targets.py
+│   ├── all_2_source_into_first_2_targets.py
+│   ├── all_2_source_into_specific_2_targets.py
+│   ├── first_2_source_into_all_2_targets.py
+│   └── specific_2_source_into_specific_2_targets.py
+├── inswapper_128_fp16/                  # fast FP16
+│   └── all_1_source_into_all_1_target.py
+├── simswap_256/                         # high quality
+│   └── all_1_source_into_all_1_target.py
+├── simswap_unofficial_512/              # highest quality
+│   └── all_1_source_into_all_1_target.py
+├── blendswap_256/                       # blend-focused
+│   └── all_1_source_into_all_1_target.py
+├── uniface_256/                         # universal + blend demo
+│   ├── all_1_source_into_all_1_target.py
+│   └── all_1_source_into_all_1_target_blend.py
+├── ghost_1_256/
+│   └── all_1_source_into_all_1_target.py
+├── ghost_2_256/
+│   └── all_1_source_into_all_1_target.py
+└── ghost_3_256/
+    └── all_1_source_into_all_1_target.py
+```
+
+Create a `.env` file in `examples/` with your RunPod API key and endpoint ID,
+then run any script from the `examples/` directory:
+
+```bash
+cp examples/.env.example examples/.env
+# edit examples/.env with your RunPod credentials
+cd examples
+python3 inswapper_128/all_1_source_into_all_1_target.py
+python3 simswap_unofficial_512/all_1_source_into_all_1_target.py
+```
+
 ## Testing
 
 1. [Local Testing](docs/testing/local.md)
