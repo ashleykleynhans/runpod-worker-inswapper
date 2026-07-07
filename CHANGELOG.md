@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.1] - 2026-07-07
+
+### Fixed
+- Pin runpod to 1.7.10 to fix refresh_worker swallowing error output
+- Fix example script data paths for __file__-relative resolution
+- Fix util.py COMPLETED status handling for missing output
+
 ## [6.0.0] - 2026-07-06
 
 ### Added
