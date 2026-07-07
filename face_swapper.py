@@ -9,9 +9,11 @@ Forks insightface's INSwapper.get() preprocessing pipeline to add:
 """
 
 import os
-import cv2
+import onnx
 import numpy as np
-import insightface
+import cv2
+import onnxruntime
+from onnx import numpy_helper
 from typing import Dict, Tuple
 from insightface.utils import face_align
 from runpod.serverless.modules.rp_logger import RunPodLogger
@@ -21,27 +23,106 @@ from face_swapper_models import get_model_metadata
 logger = RunPodLogger()
 
 # Global model cache for lazy loading
-FACE_SWAPPER_MODELS: Dict[str, any] = {}
+FACE_SWAPPER_MODELS: Dict[str, object] = {}
 
 
-def get_face_swapper_model(model_name: str):
+class _SwapperModel:
+    """Minimal wrapper providing the INSwapper-compatible interface.
+
+    insightface's ModelRouter only routes 128x128 2-input ONNX models to
+    INSwapper. All other face swapper models (256x256, 512x512) get routed
+    to ArcFaceONNX (a recognition class), which has no .emap attribute.
+
+    This class bypasses the router entirely, opening the ONNX session
+    directly and extracting the embedding projection matrix (emap) from
+    the graph's last initializer, just like INSwapper.__init__ does.
+    """
+
+    def __init__(self, model_path: str):
+        if not os.path.exists(model_path):
+            raise FileNotFoundError(
+                f"Model file not found: {model_path}"
+            )
+
+        try:
+            onnx_model = onnx.load(model_path)
+        except Exception as e:
+            raise ValueError(
+                f"Failed to load ONNX model from '{model_path}': {e}"
+            ) from e
+
+        graph = onnx_model.graph
+
+        # Verify this is a 2-input face swapper model
+        if len(graph.input) < 2:
+            raise ValueError(
+                f"Model '{model_path}' has {len(graph.input)} input(s), "
+                f"expected at least 2 for a face swapper model"
+            )
+
+        if not graph.initializer:
+            raise ValueError(
+                f"Model '{model_path}' has no initializers, "
+                f"cannot extract embedding projection matrix"
+            )
+
+        # Extract embedding projection matrix from last initializer
+        try:
+            self.emap = numpy_helper.to_array(graph.initializer[-1])
+        except Exception as e:
+            raise ValueError(
+                f"Failed to extract embedding matrix from "
+                f"'{model_path}': {e}"
+            ) from e
+
+        # Create ONNX runtime session
+        try:
+            self.session = onnxruntime.InferenceSession(model_path, None)
+        except Exception as e:
+            raise ValueError(
+                f"Failed to create inference session for "
+                f"'{model_path}': {e}"
+            ) from e
+
+        # Collect input/output names
+        self.input_names = [inp.name for inp in self.session.get_inputs()]
+        self.output_names = [out.name for out in self.session.get_outputs()]
+
+        if len(self.output_names) < 1:
+            raise ValueError(
+                f"Model '{model_path}' has no outputs"
+            )
+
+        # Read input shape for metadata
+        input_shape = self.session.get_inputs()[0].shape
+        self.input_size = tuple(input_shape[2:4][::-1])  # (w, h)
+
+        logger.info(
+            f"Swapper model loaded: {os.path.basename(model_path)} "
+            f"(input_size={self.input_size}, "
+            f"emap_shape={self.emap.shape})"
+        )
+
+
+def get_face_swapper_model(model_name: str) -> _SwapperModel:
     """
     Load face swapper model on first use, cache for subsequent calls.
 
-    The model is loaded via insightface.model_zoo.get_model() which routes
-    to INSwapper (for models with 2 inputs and 128x128 native shape) or
-    ArcFaceONNX (for other ONNX models). We access the underlying
-    onnxruntime session for direct inference.
+    Bypasses insightface's ModelRouter (which only routes 128x128 models
+    to INSwapper) and creates a _SwapperModel directly. All supported
+    face swapper models share the same 2-input architecture, so this
+    works for inswapper_128, simswap_256, ghost_1_256, blendswap_256, etc.
 
     Args:
         model_name: Model name (e.g., 'simswap_256')
 
     Returns:
-        insightface model object with .session, .emap, .input_names,
-        .output_names, and .input_size attributes
+        _SwapperModel with .session, .emap, .input_names, .output_names,
+        and .input_size attributes
 
     Raises:
         FileNotFoundError: If model file doesn't exist
+        ValueError: If the ONNX model is invalid or has wrong architecture
     """
     if model_name not in FACE_SWAPPER_MODELS:
         if model_name == 'inswapper_128':
@@ -49,19 +130,13 @@ def get_face_swapper_model(model_name: str):
         else:
             model_path = f'checkpoints/face_swapper/{model_name}.onnx'
 
-        if not os.path.exists(model_path):
-            raise FileNotFoundError(f"Model file not found: {model_path}")
-
         logger.info(f"Loading face swapper model: {model_name}")
-        FACE_SWAPPER_MODELS[model_name] = insightface.model_zoo.get_model(
-            model_path
-        )
-        logger.info(f"Loaded face swapper model: {model_name}")
+        FACE_SWAPPER_MODELS[model_name] = _SwapperModel(model_path)
 
     return FACE_SWAPPER_MODELS[model_name]
 
 
-def _prepare_source_embedding(source_face, model) -> np.ndarray:
+def _prepare_source_embedding(source_face, model: _SwapperModel) -> np.ndarray:
     """
     Prepare source face embedding for ONNX inference.
 
@@ -70,7 +145,7 @@ def _prepare_source_embedding(source_face, model) -> np.ndarray:
 
     Args:
         source_face: InsightFace face object with .normed_embedding
-        model: insightface INSwapper instance with .emap attribute
+        model: _SwapperModel instance with .emap attribute
 
     Returns:
         L2-normalized latent vector shaped for model input
@@ -235,7 +310,7 @@ def swap_face_enhanced(
     source_face,
     target_face,
     temp_frame: np.ndarray,
-    model,
+    model: _SwapperModel,
     model_name: str,
     resolution: Tuple[int, int],
     weight: float = 1.0,
@@ -257,16 +332,32 @@ def swap_face_enhanced(
         source_face: InsightFace face object with .normed_embedding
         target_face: InsightFace face object with .kps
         temp_frame: Full-size BGR frame to swap face in
-        model: insightface model object with .session, .emap, .input_names,
-               .output_names
+        model: _SwapperModel with .session, .emap, .input_names, .output_names
         model_name: Model name for metadata lookup
         resolution: (width, height) tuple for face alignment resolution
         weight: Blend weight (0.0-1.0), 1.0 = full swap
 
     Returns:
         BGR frame with swapped and pasted face
+
+    Raises:
+        ValueError: If model metadata is missing or model is not a _SwapperModel
+        RuntimeError: If ONNX inference fails
     """
-    metadata = get_model_metadata(model_name)
+    if not hasattr(model, 'session') or not hasattr(model, 'emap'):
+        raise TypeError(
+            f"Expected face swapper model with .session and .emap, "
+            f"got {type(model).__name__}. "
+            f"Model loading may have failed silently."
+        )
+
+    try:
+        metadata = get_model_metadata(model_name)
+    except KeyError as e:
+        raise ValueError(
+            f"Unknown face swapper model: '{model_name}'"
+        ) from e
+
     native_size = metadata['native_size']
     mean = metadata['mean']
     std = metadata['std']
@@ -287,10 +378,16 @@ def swap_face_enhanced(
 
     # Step 4: Prepare source embedding and run ONNX inference
     latent = _prepare_source_embedding(source_face, model)
-    pred = model.session.run(
-        model.output_names,
-        {model.input_names[0]: blob, model.input_names[1]: latent},
-    )[0]
+
+    try:
+        pred = model.session.run(
+            model.output_names,
+            {model.input_names[0]: blob, model.input_names[1]: latent},
+        )[0]
+    except Exception as e:
+        raise RuntimeError(
+            f"ONNX inference failed for model '{model_name}': {e}"
+        ) from e
 
     # Step 5: Post-process (handles tanh models)
     bgr_fake_native = _normalize_crop_frame(pred, mean, std, tanh_out)
