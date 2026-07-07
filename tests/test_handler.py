@@ -11,6 +11,18 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# Mock heavy ML dependencies before importing handler (basicsr not installed)
+_mock_mods = [
+    'basicsr', 'basicsr.utils', 'basicsr.utils.download_util',
+    'basicsr.archs', 'basicsr.archs.rrdbnet_arch',
+    'basicsr.utils.realesrgan_utils', 'basicsr.utils.registry',
+    'facelib', 'facelib.utils', 'facelib.utils.face_restoration_helper',
+    'facelib.utils.misc',
+]
+for _m in _mock_mods:
+    if _m not in sys.modules:
+        sys.modules[_m] = MagicMock()
+
 from handler import (
     get_face_swap_model,
     get_face_analyser,
@@ -172,7 +184,6 @@ class TestSwapFace:
 
     def test_swap_face(self):
         """Test face swapping functionality"""
-        # Import handler and mock the global FACE_SWAPPER
         import handler
 
         mock_swapper = Mock()
@@ -196,6 +207,33 @@ class TestSwapFace:
             temp_frame, mock_target_face2, mock_source_face1, paste_back=True
         )
         assert np.array_equal(result, mock_result)
+
+    @patch('handler.swap_face_enhanced')
+    def test_swap_face_fallback_to_global_swapper(self, mock_enhanced):
+        """When face_swap_model is None but weight != 1.0, fall back to
+        global FACE_SWAPPER (covers handler.py lines 111-113)."""
+        import handler
+        handler.FACE_SWAPPER = Mock()
+
+        mock_source = Mock()
+        mock_target = Mock()
+        temp_frame = np.zeros((100, 100, 3), dtype=np.uint8)
+        mock_enhanced.return_value = temp_frame.copy()
+
+        # face_swap_model=None + face_swapper_weight=0.5 forces else-branch
+        # where model falls back to the global FACE_SWAPPER
+        swap_face(
+            [mock_source], [mock_target], 0, 0, temp_frame,
+            face_swap_model=None,
+            face_swapper_model_name='inswapper_128',
+            face_swapper_resolution=None,
+            face_swapper_weight=0.5,
+        )
+
+        mock_enhanced.assert_called_once()
+        # The model passed should be the global FACE_SWAPPER
+        _, _, _, model_arg = mock_enhanced.call_args[0][:4]
+        assert model_arg is handler.FACE_SWAPPER
 
 
 class TestDetermineFileExtension:

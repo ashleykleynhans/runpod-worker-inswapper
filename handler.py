@@ -17,7 +17,8 @@ from schemas.input import INPUT_SCHEMA
 from face_swapper import get_face_swapper_model, swap_face_enhanced
 from face_swapper_models import (
     validate_face_swapper_params,
-    get_default_resolution
+    get_default_resolution,
+    parse_resolution,
 )
 
 FACE_SWAP_MODEL = 'checkpoints/inswapper_128.onnx'
@@ -87,6 +88,7 @@ def swap_face(source_faces,
               temp_frame,
               face_swap_model=None,
               face_swapper_model_name='inswapper_128',
+              face_swapper_resolution=None,
               face_swapper_weight=1.0):
     """
     paste source_face on target image
@@ -97,17 +99,24 @@ def swap_face(source_faces,
     target_face = target_faces[target_index]
 
     # Route to appropriate swapper
-    if face_swapper_model_name == 'inswapper_128' and face_swapper_weight == 1.0 and face_swap_model is None:
+    if (face_swapper_model_name == 'inswapper_128'
+            and face_swapper_weight == 1.0
+            and face_swap_model is None
+            and face_swapper_resolution is None):
         # Use existing FACE_SWAPPER for backward compatibility
-        return FACE_SWAPPER.get(temp_frame, target_face, source_face, paste_back=True)
+        return FACE_SWAPPER.get(temp_frame, target_face, source_face,
+                                paste_back=True)
     else:
         # Use new enhanced swapper
-        model = face_swap_model if face_swap_model is not None else FACE_SWAPPER
+        model = (face_swap_model if face_swap_model is not None
+                 else FACE_SWAPPER)
         return swap_face_enhanced(
             source_face,
             target_face,
             temp_frame,
             model,
+            face_swapper_model_name,
+            face_swapper_resolution,
             face_swapper_weight
         )
 
@@ -133,6 +142,9 @@ def process(job_id: str,
     except ValueError as e:
         logger.error(f"Validation error: {str(e)}", job_id)
         raise
+
+    # Parse resolution string to (width, height) tuple for preprocessing
+    resolution = parse_resolution(face_swapper_resolution)
 
     # Validate weight range
     if not 0.0 <= face_swapper_weight <= 1.0:
@@ -180,6 +192,7 @@ def process(job_id: str,
                     temp_frame,
                     face_swap_model,
                     face_swapper_model,
+                    resolution,
                     face_swapper_weight
                 )
         elif num_source_images == 1:
@@ -208,7 +221,11 @@ def process(job_id: str,
                         target_faces,
                         source_index,
                         target_index,
-                        temp_frame
+                        temp_frame,
+                        face_swap_model,
+                        face_swapper_model,
+                        resolution,
+                        face_swapper_weight
                     )
             elif target_indexes == "-1":
                 if num_source_faces == 1:
@@ -233,7 +250,11 @@ def process(job_id: str,
                         target_faces,
                         source_index,
                         target_index,
-                        temp_frame
+                        temp_frame,
+                        face_swap_model,
+                        face_swapper_model,
+                        resolution,
+                        face_swapper_weight
                     )
             else:
                 logger.info('Replacing specific face(s) in the target image with specific face(s) from the source image', job_id)
@@ -273,7 +294,11 @@ def process(job_id: str,
                             target_faces,
                             source_index,
                             target_index,
-                            temp_frame
+                            temp_frame,
+                            face_swap_model,
+                            face_swapper_model,
+                            resolution,
+                            face_swapper_weight
                         )
         else:
             logger.error('Unsupported face configuration', job_id)

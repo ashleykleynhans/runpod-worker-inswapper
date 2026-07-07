@@ -10,7 +10,27 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# Mock heavy ML dependencies before importing handler
+_mock_mods = [
+    'basicsr', 'basicsr.utils', 'basicsr.utils.download_util',
+    'basicsr.archs', 'basicsr.archs.rrdbnet_arch',
+    'basicsr.utils.realesrgan_utils', 'basicsr.utils.registry',
+    'facelib', 'facelib.utils', 'facelib.utils.face_restoration_helper',
+    'facelib.utils.misc',
+]
+for _m in _mock_mods:
+    if _m not in sys.modules:
+        sys.modules[_m] = MagicMock()
+
 from handler import process, face_swap, face_swap_api
+
+
+@pytest.fixture(autouse=True)
+def _mock_get_face_swapper_model():
+    """Auto-mock model loading so process() tests don't need real files."""
+    with patch('handler.get_face_swapper_model',
+               return_value=Mock()) as mock_load:
+        yield mock_load
 
 
 class TestProcess:

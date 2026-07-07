@@ -8,7 +8,26 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# Mock basicsr/facelib if not installed (same pattern as handler tests)
+_mock_mods = [
+    'basicsr', 'basicsr.utils', 'basicsr.utils.download_util',
+    'basicsr.archs', 'basicsr.archs.rrdbnet_arch',
+    'basicsr.utils.realesrgan_utils', 'basicsr.utils.registry',
+    'facelib', 'facelib.utils', 'facelib.utils.face_restoration_helper',
+    'facelib.utils.misc',
+]
+for _m in _mock_mods:
+    if _m not in sys.modules:
+        sys.modules[_m] = MagicMock()
+
 from restoration import check_ckpts, set_realesrgan, face_restoration
+
+
+def _skip_if_facelib_mocked():
+    """Skip test if facelib is mocked in sys.modules (basicsr unavailable)."""
+    facelib = sys.modules.get('facelib')
+    if facelib is not None and not hasattr(facelib, '__file__'):
+        pytest.skip("facelib is mocked, torchvision would fail on MagicMock")
 
 
 class TestCheckCkpts:
@@ -263,6 +282,46 @@ class TestFaceRestoration:
         mock_logger.log.assert_called()
         assert "Failed inference for CodeFormer" in str(mock_logger.log.call_args)
 
+    @patch('restoration.tensor2img')
+    @patch('restoration.img2tensor')
+    @patch('restoration.logger')
+    @patch('restoration.FaceRestoreHelper')
+    def test_face_restoration_successful_inference(self, mock_face_helper,
+                                                    mock_logger,
+                                                    mock_img2tensor,
+                                                    mock_tensor2img):
+        """Successful CodeFormer inference covers lines 119-121."""
+        mock_helper = Mock()
+        mock_face_helper.return_value = mock_helper
+
+        mock_face = np.zeros((512, 512, 3), dtype=np.uint8)
+        mock_helper.cropped_faces = [mock_face]
+        mock_helper.get_face_landmarks_5.return_value = 1
+
+        img = np.zeros((512, 512, 3), dtype=np.uint8)
+        upsampler = Mock()
+
+        codeformer_net = Mock()
+        codeformer_net.return_value = [torch.zeros((1, 3, 512, 512))]
+        device = torch.device('cpu')
+
+        mock_cropped_tensor = torch.zeros((1, 3, 512, 512))
+        mock_img2tensor.return_value = mock_cropped_tensor
+        mock_tensor2img.return_value = np.zeros((512, 512, 3), dtype=np.uint8)
+
+        mock_helper.paste_faces_to_input_image.return_value = (
+            np.ones((512, 512, 3), dtype=np.uint8)
+        )
+
+        result = face_restoration(
+            img, background_enhance=False, face_upsample=False,
+            upscale=2, codeformer_fidelity=0.5,
+            upsampler=upsampler, codeformer_net=codeformer_net,
+            device=device,
+        )
+
+        assert result is not None
+
     @patch('restoration.FaceRestoreHelper')
     def test_face_restoration_with_background_enhance(self, mock_helper_class):
         """Test face restoration with background enhancement"""
@@ -339,6 +398,7 @@ class TestFaceRestoration:
     @patch('restoration.cv2.resize')
     def test_face_restoration_has_aligned(self, mock_resize, mock_helper_class, mock_is_gray):
         """Test face restoration with pre-aligned faces"""
+        _skip_if_facelib_mocked()
         mock_helper = Mock()
         mock_helper_class.return_value = mock_helper
         mock_is_gray.return_value = False
@@ -424,6 +484,7 @@ class TestFaceRestoration:
     @patch('restoration.FaceRestoreHelper')
     def test_face_restoration_with_face_upsample(self, mock_helper_class):
         """Test face restoration with face upsampling enabled"""
+        _skip_if_facelib_mocked()
         mock_helper = Mock()
         mock_helper_class.return_value = mock_helper
 

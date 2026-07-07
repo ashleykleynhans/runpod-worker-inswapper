@@ -137,6 +137,7 @@ in the JSON response.
 ## Acknowledgements
 
 - [Inswapper](https://github.com/haofanwang/inswapper)
+- [FaceFusion](https://github.com/facefusion/facefusion)
 - [Roop](https://github.com/s0md3v/roop)
 - [Insightface](https://github.com/deepinsight)
 - [CodeFormer](https://huggingface.co/spaces/sczhou/CodeFormer)

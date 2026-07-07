@@ -3,8 +3,21 @@ import pytest
 import base64
 import os
 import sys
+from unittest.mock import MagicMock
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Mock heavy ML dependencies before importing handler
+_mock_mods = [
+    'basicsr', 'basicsr.utils', 'basicsr.utils.download_util',
+    'basicsr.archs', 'basicsr.archs.rrdbnet_arch',
+    'basicsr.utils.realesrgan_utils', 'basicsr.utils.registry',
+    'facelib', 'facelib.utils', 'facelib.utils.face_restoration_helper',
+    'facelib.utils.misc',
+]
+for _m in _mock_mods:
+    if _m not in sys.modules:
+        sys.modules[_m] = MagicMock()
 
 from handler import handler
 
