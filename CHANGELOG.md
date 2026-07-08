@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.15] - 2026-07-08
+
+### Fixed
+- Models downloaded to /checkpoints/ instead of workspace during Docker build
+- download_models.py now accepts an optional CLI arg for the target root directory
+
 ## [6.0.14] - 2026-07-08
 
 ### Fixed
