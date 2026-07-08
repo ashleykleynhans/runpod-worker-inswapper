@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.3] - 2026-07-08
+
+### Fixed
+- Remove refresh_worker from error responses to prevent silent failures
+- Add handler catch-all try/except for unhandled exceptions
+
 ## [6.0.2] - 2026-07-07
 
 ### Fixed
