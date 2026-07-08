@@ -2,6 +2,7 @@
 """Download all models locally — mirror Dockerfile steps."""
 
 import os
+import sys
 import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
@@ -9,7 +10,10 @@ from urllib.parse import urlparse
 import requests
 from tqdm import tqdm
 
-ROOT = Path(__file__).resolve().parent.parent
+if len(sys.argv) > 1:
+    ROOT = Path(sys.argv[1]).resolve()
+else:
+    ROOT = Path(__file__).resolve().parent.parent
 CHECKPOINTS = ROOT / "checkpoints"
 FACE_SWAPPER = CHECKPOINTS / "face_swapper"
 MODELS = CHECKPOINTS / "models"

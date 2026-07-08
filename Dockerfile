@@ -50,7 +50,7 @@ RUN pip3 install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio -
 # Download models first (stable 5.4 GB layer, cached across code changes)
 COPY scripts/download_models.py /tmp/download_models.py
 RUN pip3 install --no-cache-dir tqdm requests && \
-    python3 /tmp/download_models.py && \
+    python3 /tmp/download_models.py /workspace/runpod-worker-inswapper && \
     rm /tmp/download_models.py
 
 # Clone repo and install Python dependencies
