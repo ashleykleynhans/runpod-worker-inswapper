@@ -518,8 +518,7 @@ def face_swap_api(job_id: str, job_input: dict):
 
         return {
             'error': str(e),
-            'output': traceback.format_exc(),
-            'refresh_worker': True
+            'output': traceback.format_exc()
         }
 
 
@@ -527,15 +526,22 @@ def face_swap_api(job_id: str, job_input: dict):
 # RunPod Handler                                                               #
 # ---------------------------------------------------------------------------- #
 def handler(event):
-    job_id = event['id']
-    validated_input = validate(event['input'], INPUT_SCHEMA)
+    try:
+        job_id = event['id']
+        validated_input = validate(event['input'], INPUT_SCHEMA)
 
-    if 'errors' in validated_input:
+        if 'errors' in validated_input:
+            return {
+                'error': validated_input['errors']
+            }
+
+        return face_swap_api(job_id, validated_input['validated_input'])
+    except Exception as e:
+        logger.error(f'Unhandled handler error: {str(e)}', event.get('id', 'unknown'))
         return {
-            'error': validated_input['errors']
+            'error': str(e),
+            'output': traceback.format_exc()
         }
-
-    return face_swap_api(job_id, validated_input['validated_input'])
 
 
 if __name__ == '__main__':

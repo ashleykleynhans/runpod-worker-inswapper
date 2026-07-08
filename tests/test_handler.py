@@ -326,3 +326,18 @@ class TestHandler:
             {'source_image': 'base64_source', 'target_image': 'base64_target'}
         )
         assert result == {'image': 'result_base64'}
+
+    @patch('handler.face_swap_api')
+    @patch('handler.validate')
+    def test_handler_unhandled_exception(self, mock_validate, mock_api):
+        """Test handler catch-all for unhandled exceptions."""
+        mock_validate.return_value = {
+            'validated_input': {'source_image': 'x', 'target_image': 'y'}
+        }
+        mock_api.side_effect = RuntimeError("unexpected crash")
+
+        result = handler({'id': 'job-1', 'input': {}})
+
+        assert 'error' in result
+        assert 'unexpected crash' in result['error']
+        assert 'output' in result
