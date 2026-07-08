@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.10] - 2026-07-08
+
+### Changed
+- Fork FaceFusion's full pipeline: cv2.estimateAffinePartial2D + RANSAC warp
+- Add per-model warp templates (arcface_128, arcface_112_v1, ffhq_512)
+- Replace insightface diff-mask paste-back with FaceFusion box-mask + alpha blend
+- Fix ghost models to use arcface_112_v1 template (not arcface_128)
+- 100% test coverage (135 passed, 4 skipped)
+
 ## [6.0.9] - 2026-07-08
 
 ### Changed

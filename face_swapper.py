@@ -1,22 +1,22 @@
 # face_swapper.py
-"""Enhanced face swapping with multi-model support and blending.
+"""Enhanced face swapping forking FaceFusion's full preprocessing pipeline.
 
-Forks FaceFusion's pipeline (not insightface's) for preprocessing:
-- Configurable face alignment resolution (via face_swapper_resolution)
-- Model-specific input normalization (mean/std)
-- Tanh-output model post-processing
-- Weight-based blending (balance_source_embedding)
-- Support for embedding_projected, embedding, and source_face model families
+Key FaceFusion features (not available in insightface):
+- cv2.estimateAffinePartial2D + RANSAC for face alignment
+- Per-model warp templates (arcface_128, arcface_112_v1, ffhq_512)
+- BORDER_REPLICATE (no black borders)
+- Box mask + paste_back (smoother blending than insightface's diff-mask)
+- Per-model source preparation (emap-projected, crossface converter, source-face warp)
+- Embedding balancing for weight control
 """
 
 import os
-
 import cv2
 import numpy as np
 import onnx
 import onnxruntime
-from insightface.utils import face_align
 from onnx import numpy_helper
+from insightface.utils import face_align
 from runpod.serverless.modules.rp_logger import RunPodLogger
 from typing import Dict, Tuple
 
@@ -27,6 +27,31 @@ logger = RunPodLogger()
 # Global caches
 FACE_SWAPPER_MODELS: Dict[str, object] = {}
 EMBEDDING_CONVERTERS: Dict[str, object] = {}
+
+# FaceFusion warp templates (from face_helper.py WARP_TEMPLATE_SET)
+WARP_TEMPLATES = {
+    "arcface_112_v1": np.array(
+        [[0.35473214, 0.45658929],
+         [0.64526786, 0.45658929],
+         [0.50000000, 0.61154464],
+         [0.37913393, 0.77687500],
+         [0.62086607, 0.77687500]]
+    ),
+    "arcface_128": np.array(
+        [[0.36167656, 0.40387734],
+         [0.63696719, 0.40235469],
+         [0.50019687, 0.56044219],
+         [0.38710391, 0.72160547],
+         [0.61507734, 0.72034453]]
+    ),
+    "ffhq_512": np.array(
+        [[0.37691676, 0.46864664],
+         [0.62285697, 0.46912813],
+         [0.50123859, 0.61331904],
+         [0.39308822, 0.72541100],
+         [0.61150205, 0.72490465]]
+    ),
+}
 
 
 class _SwapperModel:
@@ -53,7 +78,6 @@ class _SwapperModel:
         input_shape = inputs[0].shape
         self.input_size = tuple(input_shape[2:4][::-1])
 
-        # Extract emap for embedding_projected models (inswapper family)
         try:
             onnx_model = onnx.load(model_path)
             graph = onnx_model.graph
@@ -90,33 +114,138 @@ def get_face_swapper_model(model_name: str) -> _SwapperModel:
 
 
 # ---------------------------------------------------------------------------
+# FaceFusion-forked warp (replaces insightface's norm_crop2)
+# ---------------------------------------------------------------------------
+
+
+def _warp_face_by_landmark_5(
+    temp_frame: np.ndarray,
+    face_landmark_5: np.ndarray,
+    warp_template: str,
+    crop_size: Tuple[int, int],
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Forks FaceFusion's warp_face_by_face_landmark_5.
+
+    Uses cv2.estimateAffinePartial2D + RANSAC (not skimage.SimilarityTransform)
+    and BORDER_REPLICATE (not black borders).
+    """
+    template = WARP_TEMPLATES[warp_template] * np.array(crop_size)
+    affine_matrix = cv2.estimateAffinePartial2D(
+        face_landmark_5.astype(np.float32),
+        template.astype(np.float32),
+        method=cv2.RANSAC,
+        ransacReprojThreshold=100,
+    )[0]
+    if affine_matrix is None:
+        # RANSAC failed; fall back to insightface
+        return face_align.norm_crop2(
+            temp_frame, face_landmark_5, crop_size[0]
+        )
+    cropped = cv2.warpAffine(
+        temp_frame, affine_matrix, crop_size,
+        borderMode=cv2.BORDER_REPLICATE, flags=cv2.INTER_AREA,
+    )
+    return cropped, affine_matrix
+
+
+# ---------------------------------------------------------------------------
+# FaceFusion-forked paste-back (replaces insightface's diff-mask)
+# ---------------------------------------------------------------------------
+
+
+def _create_box_mask(
+    crop_size: Tuple[int, int],
+    blur: float = 0.3,
+    padding: Tuple[int, int, int, int] = (0, 0, 0, 0),
+) -> np.ndarray:
+    """FaceFusion's create_box_mask: soft border mask with optional padding."""
+    w, h = crop_size
+    blur_amount = int(w * 0.5 * blur)
+    blur_area = max(blur_amount // 2, 1)
+    mask = np.ones((h, w), dtype=np.float32)
+    mask[:max(blur_area, int(h * padding[0] / 100)), :] = 0
+    mask[-max(blur_area, int(h * padding[2] / 100)):, :] = 0
+    mask[:, :max(blur_area, int(w * padding[3] / 100))] = 0
+    mask[:, -max(blur_area, int(w * padding[1] / 100)):] = 0
+    if blur_amount > 0:
+        mask = cv2.GaussianBlur(mask, (0, 0), blur_amount * 0.25)
+    return mask
+
+
+def _transform_points(points: np.ndarray, matrix: np.ndarray) -> np.ndarray:
+    """FaceFusion's transform_points helper."""
+    pts = points.reshape(-1, 1, 2)
+    pts = cv2.transform(pts, matrix)
+    return pts.reshape(-1, 2)
+
+
+def _calculate_paste_area(
+    temp_frame: np.ndarray,
+    crop_frame: np.ndarray,
+    affine_matrix: np.ndarray,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """FaceFusion's calculate_paste_area."""
+    th, tw = temp_frame.shape[:2]
+    ch, cw = crop_frame.shape[:2]
+    inv = cv2.invertAffineTransform(affine_matrix)
+    crop_pts = np.array([[0, 0], [cw, 0], [cw, ch], [0, ch]])
+    paste_pts = _transform_points(crop_pts, inv)
+    pmin = np.floor(paste_pts.min(axis=0)).astype(int)
+    pmax = np.ceil(paste_pts.max(axis=0)).astype(int)
+    x1, y1 = np.clip(pmin, 0, [tw, th])
+    x2, y2 = np.clip(pmax, 0, [tw, th])
+    bbox = np.array([x1, y1, x2, y2])
+    paste_m = inv.copy()
+    paste_m[0, 2] -= x1
+    paste_m[1, 2] -= y1
+    return bbox, paste_m
+
+
+def _paste_back(
+    temp_frame: np.ndarray,
+    crop_frame: np.ndarray,
+    crop_mask: np.ndarray,
+    affine_matrix: np.ndarray,
+) -> np.ndarray:
+    """FaceFusion's paste_back: alpha-blend with box mask."""
+    bbox, paste_m = _calculate_paste_area(temp_frame, crop_frame, affine_matrix)
+    x1, y1, x2, y2 = bbox
+    pw, ph = x2 - x1, y2 - y1
+    if pw <= 0 or ph <= 0:
+        return temp_frame
+    inv_mask = cv2.warpAffine(crop_mask, paste_m, (pw, ph)).clip(0, 1)
+    inv_mask = np.expand_dims(inv_mask, axis=-1)
+    inv_frame = cv2.warpAffine(
+        crop_frame, paste_m, (pw, ph), borderMode=cv2.BORDER_REPLICATE
+    )
+    out = temp_frame.copy()
+    paste_region = out[y1:y2, x1:x2]
+    paste_region = paste_region * (1 - inv_mask) + inv_frame * inv_mask
+    out[y1:y2, x1:x2] = paste_region.astype(out.dtype)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Source preparation (forks FaceFusion's prepare_source_embedding / frame)
 # ---------------------------------------------------------------------------
 
 
 def _prepare_embedding_projected(source_face, model) -> np.ndarray:
-    """inswapper: project embedding through emap.
-
-    FaceFusion normalizes the *source* before the dot, not after.
-    """
+    """inswapper: normalize source BEFORE dot(emap)."""
     latent = source_face.normed_embedding.reshape((1, -1))
     return np.dot(latent, model.emap) / np.linalg.norm(latent)
 
 
 def _prepare_embedding_raw(source_face, converter_name: str) -> np.ndarray:
-    """simswap/ghost: reshape, run through crossface ONNX, L2-norm."""
+    """simswap/ghost: reshape, crossface ONNX, L2-norm."""
     embedding = source_face.normed_embedding.reshape((-1, 512))
     converter = _load_embedding_converter(converter_name)
     converted = converter.run(None, {"input": embedding})[0].ravel()
-    norm = converted / np.linalg.norm(converted)
-    return norm.reshape(1, -1)
+    return (converted / np.linalg.norm(converted)).reshape(1, -1)
 
 
 def _prepare_source_face(source_face, temp_frame, source_size: int) -> np.ndarray:
-    """blendswap/uniface: warp source face to template.
-
-    FaceFusion does NOT apply mean/std here — just BGR→RGB, /255, CHW, batch.
-    """
+    """blendswap/uniface: warp source face to template, no mean/std."""
     source_img, _ = face_align.norm_crop2(
         temp_frame, source_face.kps, source_size
     )
@@ -130,14 +259,7 @@ def _balance_embedding(
     target_embedding: np.ndarray,
     weight: float,
 ) -> np.ndarray:
-    """FaceFusion's balance_source_embedding.
-
-    Interpolates between source and target: weight=1.0 slightly strengthens
-    the swap by anti-mixing the target identity.
-
-    Interpolation: weight [0, 1] → w [0.35, -0.35]
-    result = source * (1 - w) + target * w
-    """
+    """FaceFusion's balance_source_embedding."""
     w = np.interp(weight, [0, 1], [0.35, -0.35]).astype(np.float32)
     tgt = target_embedding.reshape((1, -1))
     tgt_norm = np.linalg.norm(tgt)
@@ -155,7 +277,7 @@ def _balance_embedding(
 def _prepare_crop_frame(
     crop_frame: np.ndarray, mean: list, std: list
 ) -> np.ndarray:
-    """Normalize cropped face for ONNX: BGR→RGB, /255, (x - μ) / σ, CHW, batch."""
+    """FaceFusion's prepare_crop_frame: BGR→RGB, /255, (x-μ)/σ, CHW, batch."""
     mean_np = np.array(mean, dtype=np.float32).reshape(1, 1, 3)
     std_np = np.array(std, dtype=np.float32).reshape(1, 1, 3)
     frame = crop_frame[:, :, ::-1].astype(np.float32) / 255.0
@@ -167,7 +289,7 @@ def _prepare_crop_frame(
 def _normalize_crop_frame(
     crop_frame: np.ndarray, mean: list, std: list, tanh_out: bool
 ) -> np.ndarray:
-    """Reverse normalize: CHW→HWC, tanh remap, clip, RGB→BGR, *255."""
+    """FaceFusion's normalize_crop_frame: CHW→HWC, tanh remap, clip."""
     frame = crop_frame[0].transpose(1, 2, 0)
     if tanh_out:
         mean_np = np.array(mean, dtype=np.float32).reshape(1, 1, 3)
@@ -175,63 +297,6 @@ def _normalize_crop_frame(
         frame = frame * std_np + mean_np
     frame = np.clip(frame, 0.0, 1.0)
     return (frame[:, :, ::-1] * 255.0).astype(np.uint8)
-
-
-# ---------------------------------------------------------------------------
-# Paste-back (forked from insightface INSwapper.get)
-# ---------------------------------------------------------------------------
-
-
-def _paste_back(
-    swapped_face: np.ndarray,
-    aimg: np.ndarray,
-    temp_frame: np.ndarray,
-    affine_matrix: np.ndarray,
-) -> np.ndarray:
-    """Paste swapped face into original frame with diff-based feathering."""
-    fake_diff = np.abs(
-        swapped_face.astype(np.float32) - aimg.astype(np.float32)
-    ).mean(axis=2)
-    fake_diff[:2, :] = 0
-    fake_diff[-2:, :] = 0
-    fake_diff[:, :2] = 0
-    fake_diff[:, -2:] = 0
-
-    IM = cv2.invertAffineTransform(affine_matrix)
-    img_white = np.full((aimg.shape[0], aimg.shape[1]), 255, dtype=np.float32)
-
-    frame_h, frame_w = temp_frame.shape[1], temp_frame.shape[0]
-    bgr_fake = cv2.warpAffine(swapped_face, IM, (frame_h, frame_w), borderValue=0.0)
-    img_white = cv2.warpAffine(img_white, IM, (frame_h, frame_w), borderValue=0.0)
-    fake_diff = cv2.warpAffine(fake_diff, IM, (frame_h, frame_w), borderValue=0.0)
-    img_white[img_white > 20] = 255
-
-    fake_diff[fake_diff < 10] = 0
-    fake_diff[fake_diff >= 10] = 255
-
-    img_mask = img_white
-    mask_h_inds, mask_w_inds = np.where(img_mask == 255)
-    if len(mask_h_inds) == 0 or len(mask_w_inds) == 0:
-        return temp_frame
-
-    mask_h = np.max(mask_h_inds) - np.min(mask_h_inds)
-    mask_w = np.max(mask_w_inds) - np.min(mask_w_inds)
-    mask_size = int(np.sqrt(mask_h * mask_w))
-
-    img_mask = cv2.erode(img_mask, np.ones((max(mask_size // 10, 10), max(mask_size // 10, 10)), np.uint8), iterations=1)
-    fake_diff = cv2.dilate(fake_diff, np.ones((2, 2), np.uint8), iterations=1)
-
-    k = max(mask_size // 20, 5)
-    blur = tuple(2 * i + 1 for i in (k, k))
-    img_mask = cv2.GaussianBlur(img_mask, blur, 0)
-    fake_diff = cv2.GaussianBlur(fake_diff, tuple(2 * i + 1 for i in (5, 5)), 0)
-    img_mask = (img_mask / 255).reshape(img_mask.shape[0], img_mask.shape[1], 1)
-    fake_diff /= 255
-
-    return (
-        img_mask * bgr_fake.astype(np.float32)
-        + (1 - img_mask) * temp_frame.astype(np.float32)
-    ).astype(np.uint8)
 
 
 # ---------------------------------------------------------------------------
@@ -261,10 +326,19 @@ def swap_face_enhanced(
     mean, std = meta["mean"], meta["std"]
     tanh_out = meta["tanh_out"]
     source_type = meta["source_type"]
+    warp_template = meta.get("warp_template", "arcface_128")
     target_resolution = resolution[0]
 
-    # --- Target face: warp, resize, normalize ---
-    aimg, M = face_align.norm_crop2(temp_frame, target_face.kps, target_resolution)
+    # --- Target face: FaceFusion warp (cv2.estimateAffinePartial2D + RANSAC) ---
+    crop_size = (target_resolution, target_resolution)
+    aimg, M = _warp_face_by_landmark_5(
+        temp_frame, target_face.kps, warp_template, crop_size
+    )
+
+    # Create box mask (FaceFusion's default before pixel_boost)
+    crop_mask = _create_box_mask(crop_size)
+
+    # Resize to model native size & normalize
     aimg_resized = cv2.resize(aimg, native_size)
     target_blob = _prepare_crop_frame(aimg_resized, mean, std)
 
@@ -272,17 +346,13 @@ def swap_face_enhanced(
     if source_type == "embedding_projected":
         source_input = _prepare_embedding_projected(source_face, model)
         source_input = _balance_embedding(source_input, target_face.normed_embedding, weight)
-
     elif source_type == "embedding":
         converter = meta.get("converter")
         source_input = _prepare_embedding_raw(source_face, converter)
         source_input = _balance_embedding(source_input, target_face.normed_embedding, weight)
-
     elif source_type == "source_face":
         source_size = meta["source_size"]
         source_input = _prepare_source_face(source_face, temp_frame, source_size)
-        # source_face models don't use balance_embedding or weight beyond the
-        # final cv2.addWeighted blending step below
     else:
         raise ValueError(f"Unknown source_type: '{source_type}'")
 
@@ -298,7 +368,9 @@ def swap_face_enhanced(
     # --- Post-process ---
     bgr_fake_native = _normalize_crop_frame(pred, mean, std, tanh_out)
     bgr_fake = cv2.resize(bgr_fake_native, (target_resolution, target_resolution))
-    result = _paste_back(bgr_fake, aimg, temp_frame, M)
+
+    # --- FaceFusion paste_back with box mask ---
+    result = _paste_back(temp_frame, bgr_fake, crop_mask, M)
 
     # --- Final weight blend for source_face models ---
     if source_type == "source_face" and weight < 1.0:

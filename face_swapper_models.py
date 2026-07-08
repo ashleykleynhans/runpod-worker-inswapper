@@ -37,6 +37,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "tanh_out": False,
         "source_type": "source_face",
         "source_size": 112,
+        "warp_template": "ffhq_512",
     },
     "ghost_1_256": {
         "native_size": (256, 256),
@@ -45,6 +46,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "tanh_out": True,
         "source_type": "embedding",
         "converter": "crossface_ghost.onnx",
+        "warp_template": "arcface_112_v1",
     },
     "ghost_2_256": {
         "native_size": (256, 256),
@@ -53,6 +55,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "tanh_out": True,
         "source_type": "embedding",
         "converter": "crossface_ghost.onnx",
+        "warp_template": "arcface_112_v1",
     },
     "ghost_3_256": {
         "native_size": (256, 256),
@@ -61,6 +64,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "tanh_out": True,
         "source_type": "embedding",
         "converter": "crossface_ghost.onnx",
+        "warp_template": "arcface_112_v1",
     },
     "inswapper_128": {
         "native_size": (128, 128),
@@ -68,6 +72,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "std": [1.0, 1.0, 1.0],
         "tanh_out": False,
         "source_type": "embedding_projected",
+        "warp_template": "arcface_128",
     },
     "inswapper_128_fp16": {
         "native_size": (128, 128),
@@ -75,6 +80,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "std": [1.0, 1.0, 1.0],
         "tanh_out": False,
         "source_type": "embedding_projected",
+        "warp_template": "arcface_128",
     },
     "simswap_256": {
         "native_size": (256, 256),
@@ -83,6 +89,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "tanh_out": False,
         "source_type": "embedding",
         "converter": "crossface_simswap.onnx",
+        "warp_template": "arcface_128",
     },
     "simswap_unofficial_512": {
         "native_size": (512, 512),
@@ -91,6 +98,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "tanh_out": False,
         "source_type": "embedding",
         "converter": "crossface_simswap.onnx",
+        "warp_template": "arcface_128",
     },
     "uniface_256": {
         "native_size": (256, 256),
@@ -99,6 +107,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "tanh_out": True,
         "source_type": "source_face",
         "source_size": 256,
+        "warp_template": "ffhq_512",
     },
 }
 
