@@ -711,7 +711,7 @@ class TestErrorHandlingCoverage:
         """Test error when loading source or target images fails"""
         mock_image_open.side_effect = Exception("Cannot load image")
 
-        with pytest.raises(Exception, match='Failed to load source or target images'):
+        with pytest.raises(Exception, match='Cannot load image'):
             face_swap('job_id', '/tmp/source.jpg', '/tmp/target.jpg',
                      '-1', '-1', True, False, False, 1, 0.5, 'JPEG', 0.0)
 
@@ -724,7 +724,7 @@ class TestErrorHandlingCoverage:
         mock_process.return_value = Image.new('RGB', (512, 512))
         mock_b64encode.side_effect = Exception("Encoding failed")
 
-        with pytest.raises(Exception, match='Failed to encode output image'):
+        with pytest.raises(Exception, match='Encoding failed'):
             face_swap('job_id', '/tmp/source.jpg', '/tmp/target.jpg',
                      '-1', '-1', False, False, False, 1, 0.5, 'JPEG', 0.0)
 

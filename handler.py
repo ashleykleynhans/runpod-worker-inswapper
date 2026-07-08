@@ -372,9 +372,9 @@ def face_swap(job_id: str,
         source_img_paths = src_img_path.split(';')
         source_img = [Image.open(img_path) for img_path in source_img_paths]
         target_img = Image.open(target_img_path)
-    except Exception as e:
-        logger.error(f'Failed to load images: {str(e)}', job_id)
-        raise Exception(f'Failed to load source or target images: {str(e)}')
+    except Exception:
+        logger.error(f'Failed to load images: {traceback.format_exc()}', job_id)
+        raise
 
     try:
         logger.info('Performing face swap', job_id)
@@ -397,9 +397,9 @@ def face_swap(job_id: str,
             face_selector_age_end=face_selector_age_end,
         )
         logger.info('Face swap complete', job_id)
-    except Exception as e:
-        logger.error(f'Face swap failed: {str(e)}', job_id)
-        raise Exception(f'Face swap processing failed: {str(e)}')
+    except Exception:
+        logger.error(f'Face swap failed: {traceback.format_exc()}', job_id)
+        raise
 
     if face_restore:
         try:
@@ -419,9 +419,9 @@ def face_swap(job_id: str,
 
             logger.info('CodeFormer face restoration completed successfully', job_id)
             result_image = Image.fromarray(result_image)
-        except Exception as e:
-            logger.error(f'Face restoration failed: {str(e)}', job_id)
-            raise Exception(f'Face restoration failed: {str(e)}')
+        except Exception:
+            logger.error(f'Face restoration failed: {traceback.format_exc()}', job_id)
+            raise
 
     try:
         output_buffer = io.BytesIO()
@@ -431,9 +431,9 @@ def face_swap(job_id: str,
 
         logger.debug(f'Output image size: {len(encoded_image)} characters', job_id)
         return encoded_image
-    except Exception as e:
-        logger.error(f'Failed to encode output image: {str(e)}', job_id)
-        raise Exception(f'Failed to encode output image: {str(e)}')
+    except Exception:
+        logger.error(f'Failed to encode output image: {traceback.format_exc()}', job_id)
+        raise
 
 
 def determine_file_extension(image_data):
@@ -443,19 +443,21 @@ def determine_file_extension(image_data):
         elif image_data.startswith('iVBORw0Kg'):
             image_extension = '.png'
         else:
-            # Default to png if we can't figure out the extension
             image_extension = '.png'
-    except Exception as e:
+    except Exception:
         image_extension = '.png'
 
     return image_extension
 
 
 def clean_up_temporary_files(source_image_path: str, target_image_path: str):
-    if source_image_path and os.path.exists(source_image_path):
-        os.remove(source_image_path)
-    if target_image_path and os.path.exists(target_image_path):
-        os.remove(target_image_path)
+    for path in (source_image_path, target_image_path):
+        if path:
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except Exception:
+                pass
 
 
 def face_swap_api(job_id: str, job_input: dict):
@@ -486,9 +488,9 @@ def face_swap_api(job_id: str, job_input: dict):
             # Save the source image to disk
             with open(source_image_path, 'wb') as source_file:
                 source_file.write(source_image)
-        except Exception as e:
-            logger.error(f'Failed to decode/save source image: {str(e)}', job_id)
-            raise Exception(f'Invalid source image data: {str(e)}')
+        except Exception:
+            logger.error(f'Failed to decode/save source image: {traceback.format_exc()}', job_id)
+            raise Exception(f'Invalid source image data: {traceback.format_exc()}')
 
         # Decode the target image data
         try:
@@ -499,13 +501,10 @@ def face_swap_api(job_id: str, job_input: dict):
             # Save the target image to disk
             with open(target_image_path, 'wb') as target_file:
                 target_file.write(target_image)
-        except Exception as e:
-            logger.error(f'Failed to decode/save target image: {str(e)}', job_id)
-            try:
-                clean_up_temporary_files(source_image_path, target_image_path)
-            except:
-                pass
-            raise Exception(f'Invalid target image data: {str(e)}')
+        except Exception:
+            logger.error(f'Failed to decode/save target image: {traceback.format_exc()}', job_id)
+            clean_up_temporary_files(source_image_path, target_image_path)
+            raise Exception(f'Invalid target image data: {traceback.format_exc()}')
     except Exception as e:
         logger.error(f'Early validation error: {str(e)}', job_id)
         return {
