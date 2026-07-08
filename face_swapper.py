@@ -253,6 +253,8 @@ def swap_face_enhanced(
     source_face, target_face, temp_frame: np.ndarray,
     model: _SwapperModel, model_name: str,
     resolution: Tuple[int, int], weight: float = 1.0,
+    face_mask_blur: float = 0.3,
+    face_mask_padding: Tuple[int, int, int, int] = (0, 0, 0, 0),
 ) -> np.ndarray:
     if not hasattr(model, "session"):
         raise TypeError(f"Expected swapper model, got {type(model).__name__}")
@@ -267,7 +269,7 @@ def swap_face_enhanced(
     # --- Target: warp, box mask, resize, normalize ---
     crop_size = (target_res, target_res)
     aimg, M = _warp_face_by_landmark_5(temp_frame, target_face.kps, warp_template, crop_size)
-    crop_mask = _create_box_mask(crop_size)
+    crop_mask = _create_box_mask(crop_size, blur=face_mask_blur, pad=face_mask_padding)
     aimg_resized = cv2.resize(aimg, native_size)
     target_blob = _prepare_crop_frame(aimg_resized, mean, std)
 

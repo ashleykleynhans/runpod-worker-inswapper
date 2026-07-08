@@ -1,74 +1,47 @@
 INPUT_SCHEMA = {
-    'source_image': {
-        'type': str,
-        'required': True
+    "source_image": {"type": str, "required": True},
+    "target_image": {"type": str, "required": True},
+    "source_indexes": {
+        "type": str, "required": False, "default": "-1",
     },
-    'target_image': {
-        'type': str,
-        'required': True
+    "target_indexes": {
+        "type": str, "required": False, "default": "-1",
     },
-    'source_indexes': {
-        'type': str,
-        'required': False,
-        'default': "-1"  # Default to using all faces in the source image
+    "background_enhance": {"type": bool, "required": False, "default": True},
+    "face_restore": {"type": bool, "required": False, "default": True},
+    "face_upsample": {"type": bool, "required": False, "default": True},
+    "upscale": {"type": int, "required": False, "default": 1},
+    "codeformer_fidelity": {"type": float, "required": False, "default": 0.5},
+    "output_format": {
+        "type": str, "required": False, "default": "JPEG",
+        "constraints": lambda v: v in ["JPEG", "PNG"],
     },
-    'target_indexes': {
-        'type': str,
-        'required': False,
-        'default': "-1"  # Default to swapping as many faces in the target image as there are in the source image
+    "min_face_size": {"type": float, "required": False, "default": 0.0},
+    # Face swapper model selection
+    "face_swapper_model": {"type": str, "required": False, "default": "inswapper_128"},
+    "face_swapper_resolution": {"type": str, "required": False, "default": None},
+    "face_swapper_weight": {"type": float, "required": False, "default": 1.0},
+    # Face mask controls
+    "face_mask_blur": {
+        "type": float, "required": False, "default": 0.3,
     },
-    'background_enhance': {
-        'type': bool,
-        'required': False,
-        'default': True
+    "face_mask_padding": {
+        "type": str, "required": False, "default": "0,0,0,0",
     },
-    'face_restore': {
-        'type': bool,
-        'required': False,
-        'default': True
+    # Face selector controls
+    "face_selector_mode": {
+        "type": str, "required": False, "default": "many",
     },
-    'face_upsample': {
-        'type': bool,
-        'required': False,
-        'default': True
+    "face_selector_order": {
+        "type": str, "required": False, "default": "left-right",
     },
-    'upscale': {
-        'type': int,
-        'required': False,
-        'default': 1
+    "face_selector_gender": {
+        "type": str, "required": False, "default": None,
     },
-    'codeformer_fidelity': {
-        'type': float,
-        'required': False,
-        'default': 0.5
+    "face_selector_age_start": {
+        "type": int, "required": False, "default": None,
     },
-    'output_format': {
-        'type': str,
-        'required': False,
-        'default': 'JPEG',
-        'constraints': lambda output_format: output_format in [
-            'JPEG',
-            'PNG'
-        ]
+    "face_selector_age_end": {
+        "type": int, "required": False, "default": None,
     },
-    'min_face_size': {
-        'type': float,
-        'required': False,
-        'default': 0.0
-    },
-    'face_swapper_model': {
-        'type': str,
-        'required': False,
-        'default': 'inswapper_128'
-    },
-    'face_swapper_resolution': {
-        'type': str,
-        'required': False,
-        'default': None
-    },
-    'face_swapper_weight': {
-        'type': float,
-        'required': False,
-        'default': 1.0
-    }
 }

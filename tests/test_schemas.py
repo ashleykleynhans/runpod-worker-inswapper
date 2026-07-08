@@ -130,3 +130,23 @@ class TestInputSchema:
         assert 'face_swapper_weight' in INPUT_SCHEMA
         assert INPUT_SCHEMA['face_swapper_weight']['required'] is False
         assert INPUT_SCHEMA['face_swapper_weight']['default'] == 1.0
+
+    def test_face_mask_blur_optional(self):
+        assert INPUT_SCHEMA['face_mask_blur']['required'] is False
+        assert INPUT_SCHEMA['face_mask_blur']['default'] == 0.3
+
+    def test_face_mask_padding_optional(self):
+        assert INPUT_SCHEMA['face_mask_padding']['required'] is False
+        assert INPUT_SCHEMA['face_mask_padding']['default'] == "0,0,0,0"
+
+    def test_face_selector_mode_optional(self):
+        assert INPUT_SCHEMA['face_selector_mode']['required'] is False
+        assert INPUT_SCHEMA['face_selector_mode']['default'] == "many"
+
+    def test_face_selector_order_optional(self):
+        assert INPUT_SCHEMA['face_selector_order']['required'] is False
+        assert INPUT_SCHEMA['face_selector_order']['default'] == "left-right"
+
+    def test_face_selector_gender_optional(self):
+        assert INPUT_SCHEMA['face_selector_gender']['required'] is False
+        assert INPUT_SCHEMA['face_selector_gender']['default'] is None

@@ -20,6 +20,7 @@ from face_swapper_models import (
     get_default_resolution,
     parse_resolution,
 )
+from face_selector import select_faces
 
 FACE_SWAP_MODEL = 'checkpoints/face_swapper/inswapper_128.onnx'
 TMP_PATH = '/tmp/inswapper'
@@ -89,11 +90,16 @@ def swap_face(source_faces,
               face_swap_model=None,
               face_swapper_model_name='inswapper_128',
               face_swapper_resolution=None,
-              face_swapper_weight=1.0):
+              face_swapper_weight=1.0,
+              face_mask_blur=0.3,
+              face_mask_padding=None):
     """
     paste source_face on target image
     """
     global FACE_SWAPPER
+
+    if face_mask_padding is None:
+        face_mask_padding = (0, 0, 0, 0)
 
     source_face = source_faces[source_index]
     target_face = target_faces[target_index]
@@ -117,7 +123,9 @@ def swap_face(source_faces,
             model,
             face_swapper_model_name,
             face_swapper_resolution,
-            face_swapper_weight
+            face_swapper_weight,
+            face_mask_blur=face_mask_blur,
+            face_mask_padding=face_mask_padding,
         )
 
 
@@ -129,7 +137,15 @@ def process(job_id: str,
             min_face_size: float = 0.0,
             face_swapper_model: str = 'inswapper_128',
             face_swapper_resolution: str = None,
-            face_swapper_weight: float = 1.0):
+            face_swapper_weight: float = 1.0,
+            face_mask_blur: float = 0.3,
+            face_mask_padding: str = "0,0,0,0",
+            face_selector_mode: str = "many",
+            face_selector_order: str = "left-right",
+            face_selector_gender: str = None,
+            face_selector_age_start: int = None,
+            face_selector_age_end: int = None,
+            ):
 
     global MODEL, FACE_ANALYSER
 
@@ -150,6 +166,13 @@ def process(job_id: str,
     if not 0.0 <= face_swapper_weight <= 1.0:
         raise ValueError(f"face_swapper_weight must be between 0.0 and 1.0, got {face_swapper_weight}")
 
+    # Parse face mask padding string "top,right,bottom,left" -> tuple
+    mask_padding = tuple(int(x) for x in face_mask_padding.split(","))
+
+    # Validate face selector mode
+    if face_selector_mode not in ("many", "one"):
+        raise ValueError(f"face_selector_mode must be 'many' or 'one', got '{face_selector_mode}'")
+
     # Load face swapper model (lazy loading)
     face_swap_model = get_face_swapper_model(face_swapper_model)
 
@@ -159,8 +182,14 @@ def process(job_id: str,
         logger.error(f'Failed to convert target image: {str(e)}', job_id)
         raise Exception(f'Invalid target image format: {str(e)}')
 
-    # Disable min_face_size for the target image
+    # Disable min_face_size for the target image, apply face selector
     target_faces = get_many_faces(FACE_ANALYSER, target_img)
+    if target_faces:
+        target_faces = select_faces(
+            target_faces, mode=face_selector_mode, order=face_selector_order,
+            gender=face_selector_gender, age_start=face_selector_age_start,
+            age_end=face_selector_age_end,
+        )
 
     if target_faces is None or len(target_faces) == 0:
         raise Exception('The target image does not contain any faces!')
@@ -193,7 +222,9 @@ def process(job_id: str,
                     face_swap_model,
                     face_swapper_model,
                     resolution,
-                    face_swapper_weight
+                    face_swapper_weight,
+                    face_mask_blur=face_mask_blur,
+                    face_mask_padding=mask_padding,
                 )
         elif num_source_images == 1:
             # detect source faces that will be replaced into the target image
@@ -225,7 +256,9 @@ def process(job_id: str,
                         face_swap_model,
                         face_swapper_model,
                         resolution,
-                        face_swapper_weight
+                        face_swapper_weight,
+                        face_mask_blur=face_mask_blur,
+                        face_mask_padding=mask_padding,
                     )
             elif target_indexes == "-1":
                 if num_source_faces == 1:
@@ -323,7 +356,15 @@ def face_swap(job_id: str,
               min_face_size,
               face_swapper_model='inswapper_128',
               face_swapper_resolution=None,
-              face_swapper_weight=1.0):
+              face_swapper_weight=1.0,
+              face_mask_blur=0.3,
+              face_mask_padding="0,0,0,0",
+              face_selector_mode="many",
+              face_selector_order="left-right",
+              face_selector_gender=None,
+              face_selector_age_start=None,
+              face_selector_age_end=None,
+              ):
 
     global TORCH_DEVICE, CODEFORMER_DEVICE, CODEFORMER_NET
 
@@ -346,7 +387,14 @@ def face_swap(job_id: str,
             min_face_size,
             face_swapper_model,
             face_swapper_resolution,
-            face_swapper_weight
+            face_swapper_weight,
+            face_mask_blur=face_mask_blur,
+            face_mask_padding=face_mask_padding,
+            face_selector_mode=face_selector_mode,
+            face_selector_order=face_selector_order,
+            face_selector_gender=face_selector_gender,
+            face_selector_age_start=face_selector_age_start,
+            face_selector_age_end=face_selector_age_end,
         )
         logger.info('Face swap complete', job_id)
     except Exception as e:
@@ -478,6 +526,13 @@ def face_swap_api(job_id: str, job_input: dict):
         logger.info(f'Face Swapper Model: {job_input.get("face_swapper_model", "inswapper_128")}', job_id)
         logger.info(f'Face Swapper Resolution: {job_input.get("face_swapper_resolution")}', job_id)
         logger.info(f'Face Swapper Weight: {job_input.get("face_swapper_weight", 1.0)}', job_id)
+        logger.info(f'Face Mask Blur: {job_input.get("face_mask_blur", 0.3)}', job_id)
+        logger.info(f'Face Mask Padding: {job_input.get("face_mask_padding", "0,0,0,0")}', job_id)
+        logger.info(f'Face Selector Mode: {job_input.get("face_selector_mode", "many")}', job_id)
+        logger.info(f'Face Selector Order: {job_input.get("face_selector_order", "left-right")}', job_id)
+        logger.info(f'Face Selector Gender: {job_input.get("face_selector_gender")}', job_id)
+        logger.info(f'Face Selector Age Start: {job_input.get("face_selector_age_start")}', job_id)
+        logger.info(f'Face Selector Age End: {job_input.get("face_selector_age_end")}', job_id)
 
         result_image = face_swap(
             job_id,
@@ -494,7 +549,14 @@ def face_swap_api(job_id: str, job_input: dict):
             job_input.get('min_face_size', 0.0),
             job_input.get('face_swapper_model', 'inswapper_128'),
             job_input.get('face_swapper_resolution'),
-            job_input.get('face_swapper_weight', 1.0)
+            job_input.get('face_swapper_weight', 1.0),
+            face_mask_blur=job_input.get('face_mask_blur', 0.3),
+            face_mask_padding=job_input.get('face_mask_padding', '0,0,0,0'),
+            face_selector_mode=job_input.get('face_selector_mode', 'many'),
+            face_selector_order=job_input.get('face_selector_order', 'left-right'),
+            face_selector_gender=job_input.get('face_selector_gender'),
+            face_selector_age_start=job_input.get('face_selector_age_start'),
+            face_selector_age_end=job_input.get('face_selector_age_end'),
         )
 
         # Clean up temporary files

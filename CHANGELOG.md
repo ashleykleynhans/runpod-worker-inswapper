@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.12] - 2026-07-08
+
+### Added
+- Face mask controls: face_mask_blur and face_mask_padding API params
+- Face selector: mode, order, gender, age range API params
+- select_faces() utility for filtering/sorting detected faces
+- Gender and age filtering via insightface buffalo_l attributes
+
 ## [6.0.11] - 2026-07-08
 
 ### Added
