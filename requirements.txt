@@ -2,7 +2,7 @@ Pillow
 PyYAML
 addict
 future
-insightface>=0.7.3
+insightface>=1.0.1
 lmdb
 lpips
 numpy
