@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.16] - 2026-07-08
+
+### Fixed
+- Docker build: download models to temp cache dir before repo clone, then move into place
+- CodeFormer weights: use cached downloads instead of separate wget calls
+
 ## [6.0.15] - 2026-07-08
 
 ### Fixed
