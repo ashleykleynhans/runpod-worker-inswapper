@@ -1,6 +1,6 @@
 {
   "title": "Face Swap",
-  "description": "RunPod Serverless Worker for Face Swapper and Restoration",
+  "description": "Runpod Serverless Worker for Face Swapping with 13 FaceFusion Models, CodeFormer Restoration, Face Mask Controls and Face Selector",
   "type": "serverless",
   "category": "image",
   "iconUrl": "https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-inswapper/main/assets/faceswap.png",
