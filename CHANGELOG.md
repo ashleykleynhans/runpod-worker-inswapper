@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.9] - 2026-07-08
+
+### Changed
+- Move CodeFormer weight downloads into scripts/download_models.py
+- check_ckpts() now validates instead of downloading on the fly
+- Remove basicsr scipy dependency from requirements
+
 ## [6.0.7] - 2026-07-08
 
 ### Fixed
