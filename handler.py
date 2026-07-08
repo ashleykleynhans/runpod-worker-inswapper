@@ -21,7 +21,7 @@ from face_swapper_models import (
     parse_resolution,
 )
 
-FACE_SWAP_MODEL = 'checkpoints/inswapper_128.onnx'
+FACE_SWAP_MODEL = 'checkpoints/face_swapper/inswapper_128.onnx'
 TMP_PATH = '/tmp/inswapper'
 logger = RunPodLogger()
 

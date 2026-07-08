@@ -125,10 +125,7 @@ def get_face_swapper_model(model_name: str) -> _SwapperModel:
         ValueError: If the ONNX model is invalid or has wrong architecture
     """
     if model_name not in FACE_SWAPPER_MODELS:
-        if model_name == 'inswapper_128':
-            model_path = 'checkpoints/inswapper_128.onnx'
-        else:
-            model_path = f'checkpoints/face_swapper/{model_name}.onnx'
+        model_path = f'checkpoints/face_swapper/{model_name}.onnx'
 
         logger.info(f"Loading face swapper model: {model_name}")
         FACE_SWAPPER_MODELS[model_name] = _SwapperModel(model_path)

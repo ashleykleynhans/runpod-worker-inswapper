@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.5] - 2026-07-08
+
+### Changed
+- Consolidate all face swapper models into checkpoints/face_swapper/
+- Replace Dockerfile wget downloads with scripts/download_models.py (tqdm)
+- Cache model downloads layer before repo clone for faster rebuilds
+
 ## [6.0.4] - 2026-07-08
 
 ### Fixed

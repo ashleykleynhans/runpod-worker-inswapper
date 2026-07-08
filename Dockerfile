@@ -45,36 +45,18 @@ ARG INDEX_URL="https://download.pytorch.org/whl/cu124"
 ARG TORCH_VERSION="2.6.0+cu124"
 RUN pip3 install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio --index-url ${INDEX_URL}
 
-# Install Inswapper Serverless Worker
+# Download models first (stable 5.4 GB layer, cached across code changes)
+COPY scripts/download_models.py /tmp/download_models.py
+RUN pip3 install --no-cache-dir tqdm requests && \
+    python3 /tmp/download_models.py && \
+    rm /tmp/download_models.py
+
+# Clone repo and install Python dependencies
 RUN git clone https://github.com/ashleykleynhans/runpod-worker-inswapper.git && \
     cd /workspace/runpod-worker-inswapper && \
     pip3 install -r requirements.txt && \
     pip3 uninstall -y onnxruntime && \
     pip3 install onnxruntime-gpu
-
-# Download insightface checkpoints and face swapper models
-RUN cd /workspace/runpod-worker-inswapper && \
-    mkdir -p checkpoints/face_swapper && \
-    mkdir -p checkpoints/models && \
-    cd checkpoints && \
-    # Existing inswapper_128 (keep for backward compat)
-    wget -O inswapper_128.onnx "https://huggingface.co/ashleykleynhans/inswapper/resolve/main/inswapper_128.onnx?download=true" && \
-    # NEW: Download all available face swapper models from FaceFusion
-    cd face_swapper && \
-    wget -O blendswap_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/blendswap_256.onnx" && \
-    wget -O ghost_1_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ghost_1_256.onnx" && \
-    wget -O ghost_2_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ghost_2_256.onnx" && \
-    wget -O ghost_3_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/ghost_3_256.onnx" && \
-    wget -O inswapper_128_fp16.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/inswapper_128_fp16.onnx" && \
-    wget -O simswap_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/simswap_256.onnx" && \
-    wget -O simswap_unofficial_512.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/simswap_unofficial_512.onnx" && \
-    wget -O uniface_256.onnx "https://github.com/facefusion/facefusion-assets/releases/download/models-3.0.0/uniface_256.onnx" && \
-    cd ../models && \
-    # Existing buffalo_l download (unchanged)
-    wget https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip && \
-    mkdir buffalo_l && \
-    cd buffalo_l && \
-    unzip ../buffalo_l.zip
 
 # Install CodeFormer
 RUN cd /workspace/runpod-worker-inswapper && \
