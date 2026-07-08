@@ -17,6 +17,10 @@ OUTPUT_FORMAT = 'JPEG'
 FACE_SWAPPER_MODEL = 'simswap_unofficial_512'
 FACE_SWAPPER_RESOLUTION = '1024x1024'
 FACE_SWAPPER_WEIGHT = 1.0
+FACE_MASK_BLUR = 0.3
+FACE_MASK_PADDING = "0,0,0,0"
+FACE_SELECTOR_MODE = "many"
+FACE_SELECTOR_ORDER = "left-right"
 
 
 if __name__ == '__main__':
@@ -35,6 +39,10 @@ if __name__ == '__main__':
             "face_swapper_model": FACE_SWAPPER_MODEL,
             "face_swapper_resolution": FACE_SWAPPER_RESOLUTION,
             "face_swapper_weight": FACE_SWAPPER_WEIGHT,
+            "face_mask_blur": FACE_MASK_BLUR,
+            "face_mask_padding": FACE_MASK_PADDING,
+            "face_selector_mode": FACE_SELECTOR_MODE,
+            "face_selector_order": FACE_SELECTOR_ORDER,
         }
     }
 
