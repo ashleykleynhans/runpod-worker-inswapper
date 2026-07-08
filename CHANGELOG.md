@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.14] - 2026-07-08
+
+### Fixed
+- Improve error handling to always include full traceback in responses
+- clean_up_temporary_files silently handles OS errors on locked files
+
 ## [6.0.13] - 2026-07-08
 
 ### Fixed
