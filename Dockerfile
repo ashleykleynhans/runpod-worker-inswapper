@@ -1,6 +1,8 @@
 ARG CUDA_VERSION="12.4.1"
 FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu22.04
 
+LABEL org.opencontainers.image.description="Runpod Serverless worker for face swapping using FaceFusion swapper models and insightface detection"
+
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=on \

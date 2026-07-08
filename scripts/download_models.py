@@ -103,10 +103,11 @@ def main() -> None:
     if zip_path.exists():
         _extract_zip(zip_path)
 
-    for dest_dir, filename, _ in DOWNLOADS:
-        dest = dest_dir / filename
-        if dest.exists():
-            total += dest.stat().st_size
+    total = sum(
+        (dest_dir / filename).stat().st_size
+        for dest_dir, filename, _ in DOWNLOADS
+        if (dest_dir / filename).exists()
+    )
     print(f"\nDone. Total: {total / (1024**3):.1f} GB")
 
 

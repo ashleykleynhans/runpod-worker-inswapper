@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.6] - 2026-07-08
+
+### Fixed
+- Fix UnboundLocalError in download_models.py
+
+### Added
+- OCI image labels and annotations in Dockerfile and docker-bake.hcl
+
 ## [6.0.5] - 2026-07-08
 
 ### Changed

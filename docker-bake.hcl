@@ -11,7 +11,7 @@ variable "APP" {
 }
 
 variable "RELEASE" {
-    default = "6.0.5"
+    default = "6.0.6"
 }
 
 variable "CU_VERSION" {
@@ -29,6 +29,9 @@ variable "TORCH_VERSION" {
 target "default" {
     dockerfile = "Dockerfile"
     tags = ["${REGISTRY}/${REGISTRY_USER}/${APP}:${RELEASE}"]
+    annotations = [
+        "org.opencontainers.image.description=Runpod Serverless worker for face swapping using FaceFusion swapper models and insightface detection",
+    ]
     args = {
         RELEASE = "${RELEASE}"
         CUDA_VERSION = "${CUDA_VERSION}"
