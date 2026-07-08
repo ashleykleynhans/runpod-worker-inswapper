@@ -8,7 +8,8 @@ from face_swapper import (
     get_face_swapper_model,
     _prepare_crop_frame,
     _normalize_crop_frame,
-    _prepare_source_embedding,
+    _prepare_source_projected,
+    _prepare_source_raw,
     _paste_back,
 )
 
@@ -101,70 +102,59 @@ def test_get_face_swapper_model_missing_file():
 
 
 def test_get_face_swapper_model_corrupt_onnx():
-    """Should raise ValueError for corrupt ONNX file."""
+    """Corrupt ONNX gracefully falls back to identity emap, doesn't crash."""
     with (
         patch('os.path.exists', return_value=True),
-        patch('face_swapper.onnx.load', side_effect=ValueError("bad file")),
+        patch('face_swapper.onnxruntime.InferenceSession') as mock_cls,
     ):
-        with pytest.raises(ValueError, match="Failed to load ONNX model"):
-            _SwapperModel('/fake/path.onnx')
+        inp1, inp2 = Mock(), Mock()
+        inp1.name, inp1.shape = "target", [1, 3, 128, 128]
+        inp2.name, inp2.shape = "source", [1, 512]
+        mock_cls.return_value.get_inputs.return_value = [inp1, inp2]
+        out = Mock()
+        out.name = "output"
+        mock_cls.return_value.get_outputs.return_value = [out]
+
+        with patch('face_swapper.onnx.load', side_effect=ValueError("bad file")):
+            # Falls back to identity emap — should not raise
+            model = _SwapperModel('/fake/path.onnx')
+            assert model.emap.shape == (1, 1)
 
 
 def test_get_face_swapper_model_single_input():
     """Should raise ValueError for model with only 1 input."""
-    import onnx
-    from onnx import helper, TensorProto
-
-    graph = helper.make_graph(
-        [], "test",
-        [helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, 3, 128, 128])],
-        [helper.make_tensor_value_info("output", TensorProto.FLOAT, [1, 3, 128, 128])],
-    )
-    model = helper.make_model(graph)
-
     with (
         patch('os.path.exists', return_value=True),
-        patch('face_swapper.onnx.load', return_value=model),
+        patch('face_swapper.onnxruntime.InferenceSession') as mock_cls,
     ):
+        inp1 = Mock()
+        inp1.name, inp1.shape = "input", [1, 3, 128, 128]
+        mock_cls.return_value.get_inputs.return_value = [inp1]
+        out = Mock()
+        out.name = "output"
+        mock_cls.return_value.get_outputs.return_value = [out]
+
         with pytest.raises(ValueError, match="expected at least 2"):
             _SwapperModel('/fake/path.onnx')
 
 
-def test_get_face_swapper_model_corrupt_initializer():
-    """Should raise ValueError when initializer can't be parsed."""
-    onnx_model = _make_mock_onnx_model()
-
+def test_get_face_swapper_model_no_initializers_ok():
+    """Model with no initializers falls back to identity emap."""
     with (
         patch('os.path.exists', return_value=True),
-        patch('face_swapper.onnx.load', return_value=onnx_model),
-        patch('face_swapper.numpy_helper.to_array',
-              side_effect=ValueError("corrupt data")),
+        patch('face_swapper.onnxruntime.InferenceSession') as mock_cls,
     ):
-        with pytest.raises(ValueError, match="Failed to extract embedding"):
-            _SwapperModel('/fake/path.onnx')
+        inp1, inp2 = Mock(), Mock()
+        inp1.name, inp1.shape = "target", [1, 3, 128, 128]
+        inp2.name, inp2.shape = "source", [1, 512]
+        mock_cls.return_value.get_inputs.return_value = [inp1, inp2]
+        out = Mock()
+        out.name = "output"
+        mock_cls.return_value.get_outputs.return_value = [out]
 
-
-def test_get_face_swapper_model_no_initializers():
-    """Should raise ValueError for model with no initializers."""
-    import onnx
-    from onnx import helper, TensorProto
-
-    graph = helper.make_graph(
-        [], "test",
-        [
-            helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, 3, 128, 128]),
-            helper.make_tensor_value_info("latent", TensorProto.FLOAT, [1, 512]),
-        ],
-        [helper.make_tensor_value_info("output", TensorProto.FLOAT, [1, 3, 128, 128])],
-    )
-    model = helper.make_model(graph)
-
-    with (
-        patch('os.path.exists', return_value=True),
-        patch('face_swapper.onnx.load', return_value=model),
-    ):
-        with pytest.raises(ValueError, match="has no initializers"):
-            _SwapperModel('/fake/path.onnx')
+        with patch('face_swapper.onnx.load', return_value=_make_mock_onnx_model()):
+            model = _SwapperModel('/fake/path.onnx')
+            assert model.emap.shape == (512, 512)
 
 
 def test_get_face_swapper_model_no_outputs():
@@ -267,16 +257,30 @@ def test_normalize_crop_frame_tanh():
     assert np.allclose(out.astype(float), 127.5, atol=1.0)
 
 
-def test_prepare_source_embedding():
-    """Embedding should be L2-normalized after projection."""
+def test_prepare_source_projected():
+    """Embedding should be L2-normalized after emap projection."""
     mock_model = Mock()
     mock_model.emap = np.eye(512, dtype=np.float32)
     mock_source = Mock()
     mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
 
-    latent = _prepare_source_embedding(mock_source, mock_model)
+    latent = _prepare_source_projected(mock_source, mock_model)
     assert latent.shape == (1, 512)
     assert abs(np.linalg.norm(latent) - 1.0) < 0.001
+
+
+def test_prepare_source_raw():
+    """Raw embedding should be L2-normalized without projection."""
+    mock_source = Mock()
+    mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
+
+    latent = _prepare_source_raw(mock_source)
+    assert latent.shape == (1, 512)
+    assert abs(np.linalg.norm(latent) - 1.0) < 0.001
+    # Raw embedding: no projection, just normalization
+    np.testing.assert_array_almost_equal(
+        latent, np.ones((1, 512)) / np.sqrt(512)
+    )
 
 
 def test_paste_back_empty_mask_early_return():

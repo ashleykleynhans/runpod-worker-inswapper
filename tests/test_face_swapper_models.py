@@ -66,6 +66,7 @@ def test_get_model_metadata_inswapper():
     assert meta['mean'] == [0.0, 0.0, 0.0]
     assert meta['std'] == [1.0, 1.0, 1.0]
     assert meta['tanh_out'] is False
+    assert meta['source_type'] == 'embedding_projected'
 
 
 def test_get_model_metadata_simswap():
@@ -73,6 +74,7 @@ def test_get_model_metadata_simswap():
     meta = get_model_metadata('simswap_256')
     assert meta['native_size'] == (256, 256)
     assert meta['tanh_out'] is False
+    assert meta['source_type'] == 'embedding'
 
 
 def test_get_model_metadata_ghost():
@@ -80,6 +82,14 @@ def test_get_model_metadata_ghost():
     meta = get_model_metadata('ghost_1_256')
     assert meta['tanh_out'] is True
     assert meta['mean'] == [0.5, 0.5, 0.5]
+    assert meta['source_type'] == 'embedding'
+
+
+def test_get_model_metadata_blendswap():
+    """blendswap should be source_face type with source_size=112"""
+    meta = get_model_metadata('blendswap_256')
+    assert meta['source_type'] == 'source_face'
+    assert meta['source_size'] == 112
 
 
 def test_get_model_metadata_missing():
