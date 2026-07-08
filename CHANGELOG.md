@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.13] - 2026-07-08
+
+### Fixed
+- Hyperswap broken: embedding_norm is scalar, use normed_embedding instead
+- Ghost models: skip target L2-normalization in balance_embedding
+
 ## [6.0.12] - 2026-07-08
 
 ### Added
