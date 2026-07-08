@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Download all face swapper models and face detection models locally.
-
-Mirrors the model download steps from the Dockerfile so models can be
-tested without a full Docker build. Uses tqdm for progress bars (same
-library FaceFusion uses).
-"""
+"""Download all models locally — mirror Dockerfile steps."""
 
 import os
 import zipfile
@@ -20,51 +15,47 @@ FACE_SWAPPER = CHECKPOINTS / "face_swapper"
 MODELS = CHECKPOINTS / "models"
 CODEFORMER = ROOT / "CodeFormer" / "CodeFormer" / "weights"
 
-MODELS_3_0_0 = (
-    "https://github.com/facefusion/facefusion-assets"
-    "/releases/download/models-3.0.0"
-)
-
-CODEFORMER_URL = (
-    "https://github.com/sczhou/CodeFormer/releases/download/v0.1.0"
-)
-MODELS_3_4_0 = (
-    "https://github.com/facefusion/facefusion-assets"
-    "/releases/download/models-3.4.0"
-)
+_BASE = "https://github.com/facefusion/facefusion-assets/releases/download"
+MODELS_3_0_0 = f"{_BASE}/models-3.0.0"
+MODELS_3_1_0 = f"{_BASE}/models-3.1.0"
+MODELS_3_3_0 = f"{_BASE}/models-3.3.0"
+MODELS_3_4_0 = f"{_BASE}/models-3.4.0"
+CODEFORMER_URL = "https://github.com/sczhou/CodeFormer/releases/download/v0.1.0"
 
 DOWNLOADS = [
-    # face swapper models
-    (FACE_SWAPPER, "inswapper_128.onnx",
-     "https://huggingface.co/ashleykleynhans/inswapper/resolve/main/inswapper_128.onnx?download=true"),
+    # Face swapper models — models-3.0.0
     (FACE_SWAPPER, "blendswap_256.onnx", f"{MODELS_3_0_0}/blendswap_256.onnx"),
     (FACE_SWAPPER, "ghost_1_256.onnx", f"{MODELS_3_0_0}/ghost_1_256.onnx"),
     (FACE_SWAPPER, "ghost_2_256.onnx", f"{MODELS_3_0_0}/ghost_2_256.onnx"),
     (FACE_SWAPPER, "ghost_3_256.onnx", f"{MODELS_3_0_0}/ghost_3_256.onnx"),
+    (FACE_SWAPPER, "inswapper_128.onnx",
+     "https://huggingface.co/ashleykleynhans/inswapper/resolve/main/inswapper_128.onnx?download=true"),
     (FACE_SWAPPER, "inswapper_128_fp16.onnx", f"{MODELS_3_0_0}/inswapper_128_fp16.onnx"),
     (FACE_SWAPPER, "simswap_256.onnx", f"{MODELS_3_0_0}/simswap_256.onnx"),
     (FACE_SWAPPER, "simswap_unofficial_512.onnx", f"{MODELS_3_0_0}/simswap_unofficial_512.onnx"),
     (FACE_SWAPPER, "uniface_256.onnx", f"{MODELS_3_0_0}/uniface_256.onnx"),
-    # embedding converters (preprocess insightface embeddings for swapper models)
+    # hififace — models-3.1.0
+    (FACE_SWAPPER, "hififace_unofficial_256.onnx", f"{MODELS_3_1_0}/hififace_unofficial_256.onnx"),
+    # hyperswap — models-3.3.0
+    (FACE_SWAPPER, "hyperswap_1a_256.onnx", f"{MODELS_3_3_0}/hyperswap_1a_256.onnx"),
+    (FACE_SWAPPER, "hyperswap_1b_256.onnx", f"{MODELS_3_3_0}/hyperswap_1b_256.onnx"),
+    (FACE_SWAPPER, "hyperswap_1c_256.onnx", f"{MODELS_3_3_0}/hyperswap_1c_256.onnx"),
+    # Embedding converters — models-3.4.0
     (FACE_SWAPPER, "crossface_ghost.onnx", f"{MODELS_3_4_0}/crossface_ghost.onnx"),
+    (FACE_SWAPPER, "crossface_hififace.onnx", f"{MODELS_3_4_0}/crossface_hififace.onnx"),
     (FACE_SWAPPER, "crossface_simswap.onnx", f"{MODELS_3_4_0}/crossface_simswap.onnx"),
-    # insightface face detection models
+    # Insightface face detection
     (MODELS, "buffalo_l.zip",
      "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"),
     # CodeFormer weights
-    (CODEFORMER / "CodeFormer", "codeformer.pth",
-     f"{CODEFORMER_URL}/codeformer.pth"),
-    (CODEFORMER / "facelib", "detection_Resnet50_Final.pth",
-     f"{CODEFORMER_URL}/detection_Resnet50_Final.pth"),
-    (CODEFORMER / "facelib", "parsing_parsenet.pth",
-     f"{CODEFORMER_URL}/parsing_parsenet.pth"),
-    (CODEFORMER / "realesrgan", "RealESRGAN_x2plus.pth",
-     f"{CODEFORMER_URL}/RealESRGAN_x2plus.pth"),
+    (CODEFORMER / "CodeFormer", "codeformer.pth", f"{CODEFORMER_URL}/codeformer.pth"),
+    (CODEFORMER / "facelib", "detection_Resnet50_Final.pth", f"{CODEFORMER_URL}/detection_Resnet50_Final.pth"),
+    (CODEFORMER / "facelib", "parsing_parsenet.pth", f"{CODEFORMER_URL}/parsing_parsenet.pth"),
+    (CODEFORMER / "realesrgan", "RealESRGAN_x2plus.pth", f"{CODEFORMER_URL}/RealESRGAN_x2plus.pth"),
 ]
 
 
 def _download(dest_dir: Path, filename: str, url: str) -> None:
-    """Download a single file with tqdm progress bar."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest_path = dest_dir / filename
 
@@ -82,12 +73,8 @@ def _download(dest_dir: Path, filename: str, url: str) -> None:
     with (
         open(dest_path, "wb") as f,
         tqdm(
-            total=expected_size,
-            unit="B",
-            unit_scale=True,
-            unit_divisor=1024,
-            desc=filename,
-            ascii=" =",
+            total=expected_size, unit="B", unit_scale=True, unit_divisor=1024,
+            desc=filename, ascii=" =",
         ) as pbar,
     ):
         for chunk in response.iter_content(chunk_size=8192):
@@ -96,12 +83,10 @@ def _download(dest_dir: Path, filename: str, url: str) -> None:
 
 
 def _extract_zip(zip_path: Path) -> None:
-    """Extract a zip file into a sibling directory of the same name."""
     extract_dir = zip_path.with_suffix("")
     if extract_dir.exists() and any(extract_dir.iterdir()):
         tqdm.write("✓ buffalo_l already extracted")
         return
-
     extract_dir.mkdir(parents=True, exist_ok=True)
     print(f"Extracting {zip_path.name} ...")
     with zipfile.ZipFile(zip_path, "r") as zf:
@@ -111,7 +96,6 @@ def _extract_zip(zip_path: Path) -> None:
 
 def main() -> None:
     print(f"Downloading models to {CHECKPOINTS}\n")
-
     for dest_dir, filename, url in DOWNLOADS:
         try:
             _download(dest_dir, filename, url)
@@ -127,7 +111,7 @@ def main() -> None:
         for dest_dir, filename, _ in DOWNLOADS
         if (dest_dir / filename).exists()
     )
-    print(f"\nDone. Total: {total / (1024**3):.1f} GB")
+    print(f"\nDone. Total: {total / (1024 ** 3):.1f} GB")
 
 
 if __name__ == "__main__":

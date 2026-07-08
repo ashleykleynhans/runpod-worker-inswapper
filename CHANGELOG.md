@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.11] - 2026-07-08
+
+### Added
+- hyperswap_1a/1b/1c_256 and hififace_unofficial_256 models
+- mtcnn_512 warp template for hififace
+- crossface_hififace embedding converter
+
+### Fixed
+- Use raw .embedding instead of .normed_embedding matching FaceFusion
+- Handle hyperswap reversed ONNX inputs (embedding first)
+
 ## [6.0.10] - 2026-07-08
 
 ### Changed

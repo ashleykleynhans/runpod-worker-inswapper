@@ -9,6 +9,10 @@ FACE_SWAPPER_MODEL_SET: Dict[str, List[str]] = {
     "ghost_1_256": ["256x256", "512x512", "768x768", "1024x1024"],
     "ghost_2_256": ["256x256", "512x512", "768x768", "1024x1024"],
     "ghost_3_256": ["256x256", "512x512", "768x768", "1024x1024"],
+    "hififace_unofficial_256": ["256x256", "512x512", "768x768", "1024x1024"],
+    "hyperswap_1a_256": ["256x256", "512x512", "768x768", "1024x1024"],
+    "hyperswap_1b_256": ["256x256", "512x512", "768x768", "1024x1024"],
+    "hyperswap_1c_256": ["256x256", "512x512", "768x768", "1024x1024"],
     "inswapper_128": ["128x128", "256x256", "384x384", "512x512", "768x768", "1024x1024"],
     "inswapper_128_fp16": ["128x128", "256x256", "384x384", "512x512", "768x768", "1024x1024"],
     "simswap_256": ["256x256", "512x512", "768x768", "1024x1024"],
@@ -16,7 +20,6 @@ FACE_SWAPPER_MODEL_SET: Dict[str, List[str]] = {
     "uniface_256": ["256x256", "512x512", "768x768", "1024x1024"],
 }
 
-# Default resolutions when not specified by user
 DEFAULT_RESOLUTIONS: Dict[str, str] = {
     "inswapper_128": "512x512",
     "inswapper_128_fp16": "512x512",
@@ -24,16 +27,10 @@ DEFAULT_RESOLUTIONS: Dict[str, str] = {
     "default": "1024x1024",
 }
 
-# Per-model metadata for FaceFusion-forked preprocessing pipeline.
-# source_type determines how the second model input is prepared:
-#   embedding_projected  — insightface embedding dot emap, L2-norm
-#   embedding            — raw insightface embedding, L2-norm
-#   source_face          — warp source face to a template (source_size)
 MODEL_METADATA: Dict[str, dict] = {
     "blendswap_256": {
         "native_size": (256, 256),
-        "mean": [0.0, 0.0, 0.0],
-        "std": [1.0, 1.0, 1.0],
+        "mean": [0.0, 0.0, 0.0], "std": [1.0, 1.0, 1.0],
         "tanh_out": False,
         "source_type": "source_face",
         "source_size": 112,
@@ -41,8 +38,7 @@ MODEL_METADATA: Dict[str, dict] = {
     },
     "ghost_1_256": {
         "native_size": (256, 256),
-        "mean": [0.5, 0.5, 0.5],
-        "std": [0.5, 0.5, 0.5],
+        "mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5],
         "tanh_out": True,
         "source_type": "embedding",
         "converter": "crossface_ghost.onnx",
@@ -50,8 +46,7 @@ MODEL_METADATA: Dict[str, dict] = {
     },
     "ghost_2_256": {
         "native_size": (256, 256),
-        "mean": [0.5, 0.5, 0.5],
-        "std": [0.5, 0.5, 0.5],
+        "mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5],
         "tanh_out": True,
         "source_type": "embedding",
         "converter": "crossface_ghost.onnx",
@@ -59,33 +54,58 @@ MODEL_METADATA: Dict[str, dict] = {
     },
     "ghost_3_256": {
         "native_size": (256, 256),
-        "mean": [0.5, 0.5, 0.5],
-        "std": [0.5, 0.5, 0.5],
+        "mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5],
         "tanh_out": True,
         "source_type": "embedding",
         "converter": "crossface_ghost.onnx",
         "warp_template": "arcface_112_v1",
     },
+    "hififace_unofficial_256": {
+        "native_size": (256, 256),
+        "mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5],
+        "tanh_out": True,
+        "source_type": "embedding",
+        "converter": "crossface_hififace.onnx",
+        "warp_template": "mtcnn_512",
+    },
+    "hyperswap_1a_256": {
+        "native_size": (256, 256),
+        "mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5],
+        "tanh_out": True,
+        "source_type": "embedding_norm",
+        "warp_template": "arcface_128",
+    },
+    "hyperswap_1b_256": {
+        "native_size": (256, 256),
+        "mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5],
+        "tanh_out": True,
+        "source_type": "embedding_norm",
+        "warp_template": "arcface_128",
+    },
+    "hyperswap_1c_256": {
+        "native_size": (256, 256),
+        "mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5],
+        "tanh_out": True,
+        "source_type": "embedding_norm",
+        "warp_template": "arcface_128",
+    },
     "inswapper_128": {
         "native_size": (128, 128),
-        "mean": [0.0, 0.0, 0.0],
-        "std": [1.0, 1.0, 1.0],
+        "mean": [0.0, 0.0, 0.0], "std": [1.0, 1.0, 1.0],
         "tanh_out": False,
         "source_type": "embedding_projected",
         "warp_template": "arcface_128",
     },
     "inswapper_128_fp16": {
         "native_size": (128, 128),
-        "mean": [0.0, 0.0, 0.0],
-        "std": [1.0, 1.0, 1.0],
+        "mean": [0.0, 0.0, 0.0], "std": [1.0, 1.0, 1.0],
         "tanh_out": False,
         "source_type": "embedding_projected",
         "warp_template": "arcface_128",
     },
     "simswap_256": {
         "native_size": (256, 256),
-        "mean": [0.485, 0.456, 0.406],
-        "std": [0.229, 0.224, 0.225],
+        "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225],
         "tanh_out": False,
         "source_type": "embedding",
         "converter": "crossface_simswap.onnx",
@@ -93,8 +113,7 @@ MODEL_METADATA: Dict[str, dict] = {
     },
     "simswap_unofficial_512": {
         "native_size": (512, 512),
-        "mean": [0.0, 0.0, 0.0],
-        "std": [1.0, 1.0, 1.0],
+        "mean": [0.0, 0.0, 0.0], "std": [1.0, 1.0, 1.0],
         "tanh_out": False,
         "source_type": "embedding",
         "converter": "crossface_simswap.onnx",
@@ -102,8 +121,7 @@ MODEL_METADATA: Dict[str, dict] = {
     },
     "uniface_256": {
         "native_size": (256, 256),
-        "mean": [0.5, 0.5, 0.5],
-        "std": [0.5, 0.5, 0.5],
+        "mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5],
         "tanh_out": True,
         "source_type": "source_face",
         "source_size": 256,
@@ -118,14 +136,13 @@ def validate_face_swapper_params(model_name: str, resolution: str) -> None:
         valid_models = ", ".join(sorted(FACE_SWAPPER_MODEL_SET.keys()))
         raise ValueError(
             f"Invalid face_swapper_model: '{model_name}'. "
-            f"Valid options: {valid_models}"
+            f"Valid: {valid_models}"
         )
-
     if resolution not in FACE_SWAPPER_MODEL_SET[model_name]:
-        valid_resolutions = ", ".join(FACE_SWAPPER_MODEL_SET[model_name])
+        valid = ", ".join(FACE_SWAPPER_MODEL_SET[model_name])
         raise ValueError(
             f"Model '{model_name}' does not support resolution '{resolution}'. "
-            f"Valid resolutions for this model: {valid_resolutions}"
+            f"Valid: {valid}"
         )
 
 
@@ -141,14 +158,13 @@ def parse_resolution(resolution: str) -> Tuple[int, int]:
         if len(parts) != 2:
             raise ValueError(
                 f"Invalid resolution format: '{resolution}'. "
-                f"Expected format: 'WIDTHxHEIGHT' (e.g., '512x512')"
+                f"Expected: 'WIDTHxHEIGHT' (e.g. '512x512')"
             )
-        width, height = int(parts[0]), int(parts[1])
-        return (width, height)
+        return int(parts[0]), int(parts[1])
     except (ValueError, AttributeError) as e:
         raise ValueError(
             f"Invalid resolution format: '{resolution}'. "
-            f"Expected format: 'WIDTHxHEIGHT' (e.g., '512x512')"
+            f"Expected: 'WIDTHxHEIGHT' (e.g. '512x512')"
         ) from e
 
 
