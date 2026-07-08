@@ -8,7 +8,6 @@ import torch.nn.functional as F
 from torchvision.transforms.functional import normalize
 
 from basicsr.utils import imwrite, img2tensor, tensor2img
-from basicsr.utils.download_util import load_file_from_url
 from facelib.utils.face_restoration_helper import FaceRestoreHelper
 from facelib.utils.misc import is_gray
 from basicsr.archs.rrdbnet_arch import RRDBNet
@@ -20,21 +19,21 @@ logger = RunPodLogger()
 
 
 def check_ckpts():
-    pretrain_model_url = {
-        'codeformer': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/codeformer.pth',
-        'detection': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/detection_Resnet50_Final.pth',
-        'parsing': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/parsing_parsenet.pth',
-        'realesrgan': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/RealESRGAN_x2plus.pth'
-    }
-    # download weights
-    if not os.path.exists('CodeFormer/CodeFormer/weights/CodeFormer/codeformer.pth'):
-        load_file_from_url(url=pretrain_model_url['codeformer'], model_dir='CodeFormer/CodeFormer/weights/CodeFormer', progress=True, file_name=None)
-    if not os.path.exists('CodeFormer/CodeFormer/weights/facelib/detection_Resnet50_Final.pth'):
-        load_file_from_url(url=pretrain_model_url['detection'], model_dir='CodeFormer/CodeFormer/weights/facelib', progress=True, file_name=None)
-    if not os.path.exists('CodeFormer/CodeFormer/weights/facelib/parsing_parsenet.pth'):
-        load_file_from_url(url=pretrain_model_url['parsing'], model_dir='CodeFormer/CodeFormer/weights/facelib', progress=True, file_name=None)
-    if not os.path.exists('CodeFormer/CodeFormer/weights/realesrgan/RealESRGAN_x2plus.pth'):
-        load_file_from_url(url=pretrain_model_url['realesrgan'], model_dir='CodeFormer/CodeFormer/weights/realesrgan', progress=True, file_name=None)
+    """Verify CodeFormer weights exist.  Download them first with:
+        python3 scripts/download_models.py
+    """
+    weights = [
+        'CodeFormer/CodeFormer/weights/CodeFormer/codeformer.pth',
+        'CodeFormer/CodeFormer/weights/facelib/detection_Resnet50_Final.pth',
+        'CodeFormer/CodeFormer/weights/facelib/parsing_parsenet.pth',
+        'CodeFormer/CodeFormer/weights/realesrgan/RealESRGAN_x2plus.pth',
+    ]
+    missing = [w for w in weights if not os.path.exists(w)]
+    if missing:
+        raise FileNotFoundError(
+            f"CodeFormer weights missing: {', '.join(missing)}. "
+            f"Run: python3 scripts/download_models.py"
+        )
     
     
 # set enhancer with RealESRGAN

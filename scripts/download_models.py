@@ -18,14 +18,19 @@ ROOT = Path(__file__).resolve().parent.parent
 CHECKPOINTS = ROOT / "checkpoints"
 FACE_SWAPPER = CHECKPOINTS / "face_swapper"
 MODELS = CHECKPOINTS / "models"
+CODEFORMER = ROOT / "CodeFormer" / "CodeFormer" / "weights"
 
 MODELS_3_0_0 = (
     "https://github.com/facefusion/facefusion-assets"
     "/releases/download/models-3.0.0"
 )
 
+CODEFORMER_URL = (
+    "https://github.com/sczhou/CodeFormer/releases/download/v0.1.0"
+)
+
 DOWNLOADS = [
-    # (subdirectory, filename, url)
+    # face swapper models
     (FACE_SWAPPER, "inswapper_128.onnx",
      "https://huggingface.co/ashleykleynhans/inswapper/resolve/main/inswapper_128.onnx?download=true"),
     (FACE_SWAPPER, "blendswap_256.onnx", f"{MODELS_3_0_0}/blendswap_256.onnx"),
@@ -36,11 +41,18 @@ DOWNLOADS = [
     (FACE_SWAPPER, "simswap_256.onnx", f"{MODELS_3_0_0}/simswap_256.onnx"),
     (FACE_SWAPPER, "simswap_unofficial_512.onnx", f"{MODELS_3_0_0}/simswap_unofficial_512.onnx"),
     (FACE_SWAPPER, "uniface_256.onnx", f"{MODELS_3_0_0}/uniface_256.onnx"),
-    (
-        MODELS,
-        "buffalo_l.zip",
-        "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip",
-    ),
+    # insightface face detection models
+    (MODELS, "buffalo_l.zip",
+     "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"),
+    # CodeFormer weights
+    (CODEFORMER / "CodeFormer", "codeformer.pth",
+     f"{CODEFORMER_URL}/codeformer.pth"),
+    (CODEFORMER / "facelib", "detection_Resnet50_Final.pth",
+     f"{CODEFORMER_URL}/detection_Resnet50_Final.pth"),
+    (CODEFORMER / "facelib", "parsing_parsenet.pth",
+     f"{CODEFORMER_URL}/parsing_parsenet.pth"),
+    (CODEFORMER / "realesrgan", "RealESRGAN_x2plus.pth",
+     f"{CODEFORMER_URL}/RealESRGAN_x2plus.pth"),
 ]
 
 

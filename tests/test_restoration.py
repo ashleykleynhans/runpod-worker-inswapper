@@ -33,42 +33,30 @@ def _skip_if_facelib_mocked():
 class TestCheckCkpts:
     """Tests for check_ckpts function"""
 
-    @patch('restoration.load_file_from_url')
     @patch('restoration.os.path.exists')
-    def test_check_ckpts_all_exist(self, mock_exists, mock_load):
+    def test_check_ckpts_all_exist(self, mock_exists):
         """Test when all checkpoint files already exist"""
         mock_exists.return_value = True
+        check_ckpts()  # should not raise
 
-        check_ckpts()
-
-        mock_load.assert_not_called()
-
-    @patch('restoration.load_file_from_url')
     @patch('restoration.os.path.exists')
-    def test_check_ckpts_codeformer_missing(self, mock_exists, mock_load):
-        """Test downloading missing CodeFormer checkpoint"""
+    def test_check_ckpts_codeformer_missing(self, mock_exists):
+        """Test FileNotFoundError when CodeFormer checkpoint missing"""
         def exists_side_effect(path):
             return 'codeformer.pth' not in path
 
         mock_exists.side_effect = exists_side_effect
 
-        check_ckpts()
+        with pytest.raises(FileNotFoundError, match="codeformer.pth"):
+            check_ckpts()
 
-        # Check that codeformer was downloaded
-        calls = [c for c in mock_load.call_args_list
-                 if 'codeformer' in str(c)]
-        assert len(calls) == 1
-
-    @patch('restoration.load_file_from_url')
     @patch('restoration.os.path.exists')
-    def test_check_ckpts_all_missing(self, mock_exists, mock_load):
-        """Test downloading all missing checkpoints"""
+    def test_check_ckpts_all_missing(self, mock_exists):
+        """Test FileNotFoundError when all checkpoints missing"""
         mock_exists.return_value = False
 
-        check_ckpts()
-
-        # Should download all 4 checkpoints
-        assert mock_load.call_count == 4
+        with pytest.raises(FileNotFoundError, match="Run: python3 scripts/download_models.py"):
+            check_ckpts()
 
 
 class TestSetRealesrgan:
