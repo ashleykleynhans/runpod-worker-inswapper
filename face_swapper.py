@@ -201,8 +201,8 @@ def _prepare_embedding_raw(source_face, converter_name):
 
 
 def _prepare_embedding_norm(source_face):
-    """hyperswap: use pre-computed embedding_norm directly."""
-    return source_face.embedding_norm.reshape((1, -1))
+    """hyperswap: use L2-normalized embedding (insightface normed_embedding)."""
+    return source_face.normed_embedding.reshape((1, -1))
 
 
 def _prepare_source_face(source_face, frame, source_size):
@@ -212,13 +212,18 @@ def _prepare_source_face(source_face, frame, source_size):
     return np.expand_dims(b.transpose(2, 0, 1), axis=0).astype(np.float32)
 
 
-def _balance_embedding(src_emb, tgt_emb, weight):
-    """FaceFusion: interpolate source/target identities."""
+def _balance_embedding(src_emb, tgt_emb, weight, l2_norm_target=True):
+    """FaceFusion: interpolate source/target identities.
+
+    For hififace, hyperswap, inswapper, simswap: target is L2-normalized.
+    For ghost: target is NOT L2-normalized (raw embedding used as-is).
+    """
     w = np.interp(weight, [0, 1], [0.35, -0.35]).astype(np.float32)
     tgt = tgt_emb.reshape((1, -1))
-    n = np.linalg.norm(tgt)
-    if n > 0:
-        tgt = tgt / n
+    if l2_norm_target:
+        n = np.linalg.norm(tgt)
+        if n > 0:
+            tgt = tgt / n
     return src_emb.reshape((1, -1)) * (1 - w) + tgt * w
 
 
@@ -273,16 +278,19 @@ def swap_face_enhanced(
     aimg_resized = cv2.resize(aimg, native_size)
     target_blob = _prepare_crop_frame(aimg_resized, mean, std)
 
+    # Ghost models use raw (unnormalized) target embedding for balancing
+    l2_norm = not model_name.startswith("ghost_")
+
     # --- Source: depends on model family ---
     if source_type == "embedding_projected":
         source_input = _prepare_embedding_projected(source_face, model)
-        source_input = _balance_embedding(source_input, target_face.embedding, weight)
+        source_input = _balance_embedding(source_input, target_face.embedding, weight, l2_norm_target=l2_norm)
     elif source_type == "embedding":
         source_input = _prepare_embedding_raw(source_face, meta["converter"])
-        source_input = _balance_embedding(source_input, target_face.embedding, weight)
+        source_input = _balance_embedding(source_input, target_face.embedding, weight, l2_norm_target=l2_norm)
     elif source_type == "embedding_norm":
         source_input = _prepare_embedding_norm(source_face)
-        source_input = _balance_embedding(source_input, target_face.embedding, weight)
+        source_input = _balance_embedding(source_input, target_face.embedding, weight, l2_norm_target=l2_norm)
     elif source_type == "source_face":
         source_input = _prepare_source_face(source_face, temp_frame, meta["source_size"])
     else:

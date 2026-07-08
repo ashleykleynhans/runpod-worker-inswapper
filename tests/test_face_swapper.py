@@ -202,11 +202,10 @@ def test_embedding_raw():
 
 def test_embedding_norm():
     sf = Mock()
-    sf.embedding_norm = np.ones(512, dtype=np.float32) / np.sqrt(512)
+    sf.normed_embedding = np.ones(512, dtype=np.float32) / np.sqrt(512)
     o = _prepare_embedding_norm(sf)
     assert o.shape == (1, 512)
-    # embedding_norm is already L2-normalized
-    np.testing.assert_array_almost_equal(o, sf.embedding_norm.reshape(1, -1))
+    np.testing.assert_array_almost_equal(o, sf.normed_embedding.reshape(1, -1))
 
 
 def test_source_face():
@@ -393,7 +392,7 @@ def test_embedding_model():
 
 def test_hyperswap_swapped_inputs():
     """Hyperswap sends source to input[0] and target to input[1]."""
-    sf = Mock(); sf.embedding_norm = np.ones(512, dtype=np.float32)
+    sf = Mock(); sf.normed_embedding = np.ones(512, dtype=np.float32) / np.sqrt(512)
     tf = Mock(); tf.kps = np.random.randn(5, 2).astype(np.float32)
     tf.embedding = np.ones(512, dtype=np.float32)
     frame = np.ones((256, 256, 3), dtype=np.uint8) * 100
