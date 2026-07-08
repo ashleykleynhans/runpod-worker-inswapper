@@ -20,21 +20,28 @@ https://insightface.ai/).
 
 ## Face Swapper Models
 
-The worker supports 9 different face swap models with varying quality/speed trade-offs.
+The worker supports 13 different face swap models with varying quality/speed trade-offs.
 
 ### Available Models
 
+**Embedding-projected models:**
 - `inswapper_128` (default) - Original balanced quality/speed model
 - `inswapper_128_fp16` - Faster FP16 version
-- `simswap_256` - High quality
+
+**Embedding models (use crossface converters):**
+- `simswap_256` - High quality with ImageNet normalization
 - `simswap_unofficial_512` - Highest quality (slower)
 - `ghost_1_256`, `ghost_2_256`, `ghost_3_256` - Ghost model variants
-- `blendswap_256` - Blend-focused model
-- `uniface_256` - Universal face model
+- `hififace_unofficial_256` - High fidelity variant
+- `hyperswap_1a_256`, `hyperswap_1b_256`, `hyperswap_1c_256` - Hyperswap FP16 variants
+
+**Source-face models (warp source image to template):**
+- `blendswap_256` - Blend-focused model (uses source face image)
+- `uniface_256` - Universal face model (uses source face image)
 
 ### Model Selection Examples
 
-**High quality swap:**
+**Highest quality swap:**
 ```json
 {
   "source_image": "base64...",
@@ -54,21 +61,36 @@ The worker supports 9 different face swap models with varying quality/speed trad
 }
 ```
 
-**Subtle blend:**
+**Subtle blend with face selector filtering:**
 ```json
 {
   "source_image": "base64...",
   "target_image": "base64...",
   "face_swapper_model": "uniface_256",
-  "face_swapper_weight": 0.7
+  "face_swapper_weight": 0.7,
+  "face_selector_mode": "one",
+  "face_selector_order": "large-small",
+  "face_selector_gender": "female"
 }
 ```
 
 ### Parameters
 
+**Model selection:**
 - `face_swapper_model` (string, optional, default: "inswapper_128"): Model to use
 - `face_swapper_resolution` (string, optional): Resolution for inference (auto-selects if not specified)
 - `face_swapper_weight` (number, optional, default: 1.0): Blend weight (0.0-1.0)
+
+**Face mask controls:**
+- `face_mask_blur` (number, optional, default: 0.3): Softness of face mask edges (0.0-1.0)
+- `face_mask_padding` (string, optional, default: "0,0,0,0"): Mask inset as "top,right,bottom,left" percentages
+
+**Face selector:**
+- `face_selector_mode` (string, optional, default: "many"): "many" or "one"
+- `face_selector_order` (string, optional, default: "left-right"): Sort order for detected faces
+- `face_selector_gender` (string, optional): Filter by "male" or "female"
+- `face_selector_age_start` (integer, optional): Minimum target face age
+- `face_selector_age_end` (integer, optional): Maximum target face age
 
 See [Face Swapper Models API Documentation](docs/api/face-swapper-models.md) for complete reference.
 
@@ -107,7 +129,15 @@ examples/
 │   └── all_1_source_into_all_1_target.py
 ├── ghost_2_256/
 │   └── all_1_source_into_all_1_target.py
-└── ghost_3_256/
+├── ghost_3_256/
+│   └── all_1_source_into_all_1_target.py
+├── hififace_unofficial_256/
+│   └── all_1_source_into_all_1_target.py
+├── hyperswap_1a_256/
+│   └── all_1_source_into_all_1_target.py
+├── hyperswap_1b_256/
+│   └── all_1_source_into_all_1_target.py
+└── hyperswap_1c_256/
     └── all_1_source_into_all_1_target.py
 ```
 
