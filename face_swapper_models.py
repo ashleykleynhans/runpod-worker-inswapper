@@ -44,6 +44,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "std": [0.5, 0.5, 0.5],
         "tanh_out": True,
         "source_type": "embedding",
+        "converter": "crossface_ghost.onnx",
     },
     "ghost_2_256": {
         "native_size": (256, 256),
@@ -51,6 +52,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "std": [0.5, 0.5, 0.5],
         "tanh_out": True,
         "source_type": "embedding",
+        "converter": "crossface_ghost.onnx",
     },
     "ghost_3_256": {
         "native_size": (256, 256),
@@ -58,6 +60,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "std": [0.5, 0.5, 0.5],
         "tanh_out": True,
         "source_type": "embedding",
+        "converter": "crossface_ghost.onnx",
     },
     "inswapper_128": {
         "native_size": (128, 128),
@@ -79,6 +82,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "std": [0.229, 0.224, 0.225],
         "tanh_out": False,
         "source_type": "embedding",
+        "converter": "crossface_simswap.onnx",
     },
     "simswap_unofficial_512": {
         "native_size": (512, 512),
@@ -86,6 +90,7 @@ MODEL_METADATA: Dict[str, dict] = {
         "std": [1.0, 1.0, 1.0],
         "tanh_out": False,
         "source_type": "embedding",
+        "converter": "crossface_simswap.onnx",
     },
     "uniface_256": {
         "native_size": (256, 256),

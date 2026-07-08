@@ -28,6 +28,10 @@ MODELS_3_0_0 = (
 CODEFORMER_URL = (
     "https://github.com/sczhou/CodeFormer/releases/download/v0.1.0"
 )
+MODELS_3_4_0 = (
+    "https://github.com/facefusion/facefusion-assets"
+    "/releases/download/models-3.4.0"
+)
 
 DOWNLOADS = [
     # face swapper models
@@ -41,6 +45,9 @@ DOWNLOADS = [
     (FACE_SWAPPER, "simswap_256.onnx", f"{MODELS_3_0_0}/simswap_256.onnx"),
     (FACE_SWAPPER, "simswap_unofficial_512.onnx", f"{MODELS_3_0_0}/simswap_unofficial_512.onnx"),
     (FACE_SWAPPER, "uniface_256.onnx", f"{MODELS_3_0_0}/uniface_256.onnx"),
+    # embedding converters (preprocess insightface embeddings for swapper models)
+    (FACE_SWAPPER, "crossface_ghost.onnx", f"{MODELS_3_4_0}/crossface_ghost.onnx"),
+    (FACE_SWAPPER, "crossface_simswap.onnx", f"{MODELS_3_4_0}/crossface_simswap.onnx"),
     # insightface face detection models
     (MODELS, "buffalo_l.zip",
      "https://github.com/deepinsight/insightface/releases/download/v0.7/buffalo_l.zip"),

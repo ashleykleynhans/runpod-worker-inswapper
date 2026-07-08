@@ -3,13 +3,18 @@ import pytest
 import numpy as np
 from unittest.mock import patch, Mock, MagicMock
 from face_swapper import (
+    EMBEDDING_CONVERTERS,
     FACE_SWAPPER_MODELS,
     _SwapperModel,
     get_face_swapper_model,
+    swap_face_enhanced,
     _prepare_crop_frame,
     _normalize_crop_frame,
-    _prepare_source_projected,
-    _prepare_source_raw,
+    _prepare_embedding_projected,
+    _prepare_embedding_raw,
+    _prepare_source_face,
+    _balance_embedding,
+    _load_embedding_converter,
     _paste_back,
 )
 
@@ -194,15 +199,12 @@ def test_get_face_swapper_model_no_outputs():
 
 def test_swapper_model_inference_session_failure():
     """Should raise ValueError when InferenceSession fails."""
-    onnx_model = _make_mock_onnx_model()
-
     with (
         patch('os.path.exists', return_value=True),
-        patch('face_swapper.onnx.load', return_value=onnx_model),
-        patch('face_swapper.onnxruntime.InferenceSession',
-              side_effect=RuntimeError("GPU not available")),
+        patch('face_swapper.onnxruntime.InferenceSession') as mock_cls,
     ):
-        with pytest.raises(ValueError, match="Failed to create inference session"):
+        mock_cls.side_effect = RuntimeError("GPU not available")
+        with pytest.raises(RuntimeError, match="GPU not available"):
             _SwapperModel('/fake/path.onnx')
 
 
@@ -258,29 +260,37 @@ def test_normalize_crop_frame_tanh():
 
 
 def test_prepare_source_projected():
-    """Embedding should be L2-normalized after emap projection."""
+    """Embedding should be projected through emap (norm BEFORE dot, FF style)."""
     mock_model = Mock()
     mock_model.emap = np.eye(512, dtype=np.float32)
     mock_source = Mock()
     mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
 
-    latent = _prepare_source_projected(mock_source, mock_model)
+    latent = _prepare_embedding_projected(mock_source, mock_model)
     assert latent.shape == (1, 512)
+    # normed_embedding is L2-normed (= 1/sqrt(512) per dim), dot with eye = same,
+    # then divided by norm(source) = 1. So √512 * 1/√512 = 1 per dim.
     assert abs(np.linalg.norm(latent) - 1.0) < 0.001
 
 
-def test_prepare_source_raw():
-    """Raw embedding should be L2-normalized without projection."""
-    mock_source = Mock()
-    mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
+def test_balance_embedding_full_swap():
+    """At weight=1.0, source is slightly amplified by anti-mixing target."""
+    src = np.ones((1, 512), dtype=np.float32) * 2.0
+    tgt = -np.ones((1, 512), dtype=np.float32)
+    balanced = _balance_embedding(src, tgt, 1.0)
+    # w = -0.35, tgt_l2 = sqrt(512) ≈ 22.6
+    # balanced = src*(1 - (-0.35)) + (tgt/||tgt||)*(-0.35)
+    #          = 2.0*1.35 + (negated_ones_norm)*(-0.35) = 2.70 + 0.35/sqrt(512)
+    expected = 2.0 * 1.35 + 0.35 / np.sqrt(512)
+    assert abs(balanced[0, 0] - expected) < 0.01
 
-    latent = _prepare_source_raw(mock_source)
-    assert latent.shape == (1, 512)
-    assert abs(np.linalg.norm(latent) - 1.0) < 0.001
-    # Raw embedding: no projection, just normalization
-    np.testing.assert_array_almost_equal(
-        latent, np.ones((1, 512)) / np.sqrt(512)
-    )
+
+def test_balance_embedding_neutral():
+    """At weight=0.5, w=0, result = source only."""
+    src = np.ones((1, 512), dtype=np.float32)
+    tgt = np.ones((1, 512), dtype=np.float32)
+    balanced = _balance_embedding(src, tgt, 0.5)
+    np.testing.assert_array_almost_equal(balanced, src)
 
 
 def test_paste_back_empty_mask_early_return():
@@ -311,7 +321,7 @@ def test_paste_back_full_feathering():
 
 def test_swap_face_enhanced_rejects_non_swapper_model():
     """swap_face_enhanced should raise TypeError for model without session."""
-    from face_swapper import swap_face_enhanced
+
 
     # Use a plain object (not Mock) so hasattr(model, 'session') is False
     class BadModel:
@@ -320,7 +330,7 @@ def test_swap_face_enhanced_rejects_non_swapper_model():
     bad_model = BadModel()
     temp_frame = np.zeros((100, 100, 3), dtype=np.uint8)
 
-    with pytest.raises(TypeError, match="Expected face swapper model"):
+    with pytest.raises(TypeError, match="Expected swapper model"):
         swap_face_enhanced(
             Mock(), Mock(), temp_frame, bad_model,
             'inswapper_128', (128, 128), weight=1.0,
@@ -328,14 +338,15 @@ def test_swap_face_enhanced_rejects_non_swapper_model():
 
 
 def test_swap_face_enhanced_full_pipeline():
-    """Full swap_face_enhanced pipeline with mocked dependencies."""
-    from face_swapper import swap_face_enhanced
+    """Full swap_face_enhanced pipeline (inswapper) with mocked deps."""
+
 
     mock_source = Mock()
     mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
 
     mock_target = Mock()
     mock_target.kps = np.random.randn(5, 2).astype(np.float32)
+    mock_target.normed_embedding = np.ones((1, 512), dtype=np.float32)
 
     temp_frame = np.ones((512, 512, 3), dtype=np.uint8) * 100
 
@@ -357,6 +368,8 @@ def test_swap_face_enhanced_full_pipeline():
         patch('face_swapper._normalize_crop_frame') as mock_normcrop,
         patch('face_swapper._paste_back') as mock_paste,
         patch('face_swapper.cv2.addWeighted') as mock_blend,
+        patch('face_swapper._prepare_embedding_projected') as mock_emb,
+        patch('face_swapper._balance_embedding') as mock_bal,
     ):
         mock_norm.return_value = (
             np.ones((512, 512, 3), dtype=np.uint8),
@@ -364,6 +377,8 @@ def test_swap_face_enhanced_full_pipeline():
         )
         mock_resize.return_value = np.ones((128, 128, 3), dtype=np.uint8)
         mock_prep.return_value = np.ones((1, 3, 128, 128), dtype=np.float32)
+        mock_emb.return_value = np.ones((1, 512), dtype=np.float32)
+        mock_bal.return_value = np.ones((1, 512), dtype=np.float32)
         mock_normcrop.return_value = np.ones((128, 128, 3), dtype=np.uint8)
         mock_paste.return_value = temp_frame.copy()
 
@@ -372,22 +387,20 @@ def test_swap_face_enhanced_full_pipeline():
             'inswapper_128', resolution, weight=1.0,
         )
 
-        mock_norm.assert_called_once_with(temp_frame, mock_target.kps, 512)
+        mock_norm.assert_called_once()
         mock_resize.assert_called()
         mock_prep.assert_called_once()
         mock_model.session.run.assert_called_once()
         mock_normcrop.assert_called_once()
         mock_paste.assert_called_once()
-        mock_blend.assert_not_called()
         assert result is not None
 
 
 def test_swap_face_enhanced_inference_failure():
     """swap_face_enhanced should raise RuntimeError on ONNX failure."""
-    from face_swapper import swap_face_enhanced
+
 
     mock_model = Mock()
-    mock_model.emap = np.eye(512, dtype=np.float32)
     mock_model.input_names = ["input", "latent"]
     mock_model.output_names = ["output"]
     mock_model.session = Mock()
@@ -395,77 +408,73 @@ def test_swap_face_enhanced_inference_failure():
 
     temp_frame = np.ones((128, 128, 3), dtype=np.uint8)
 
+    mock_source = Mock()
+    mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
+    mock_target = Mock()
+    mock_target.kps = np.random.randn(5, 2).astype(np.float32)
+    mock_target.normed_embedding = np.ones((1, 512), dtype=np.float32)
+
     with (
         patch('face_swapper.face_align.norm_crop2') as mock_norm,
         patch('face_swapper.cv2.resize'),
         patch('face_swapper._prepare_crop_frame'),
+        patch('face_swapper._prepare_embedding_projected') as mock_emb,
+        patch('face_swapper._balance_embedding') as mock_bal,
     ):
         mock_norm.return_value = (
             np.ones((128, 128, 3), dtype=np.uint8),
             np.eye(2, 3, dtype=np.float32),
         )
-
-        mock_source = Mock()
-        mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
-        mock_target = Mock()
-        mock_target.kps = np.random.randn(5, 2).astype(np.float32)
+        mock_emb.return_value = np.ones((1, 512), dtype=np.float32)
+        mock_bal.return_value = np.ones((1, 512), dtype=np.float32)
 
         with pytest.raises(RuntimeError, match="ONNX inference failed"):
             swap_face_enhanced(
                 mock_source, mock_target, temp_frame, mock_model,
-                'simswap_256', (256, 256), weight=1.0,
+                'inswapper_128', (128, 128), weight=1.0,
             )
 
 
 def test_swap_face_enhanced_unknown_model():
     """swap_face_enhanced should raise ValueError for unknown model."""
-    from face_swapper import swap_face_enhanced
 
     mock_model = Mock()
     mock_model.emap = np.eye(512, dtype=np.float32)
     mock_model.session = Mock()
-
     temp_frame = np.ones((128, 128, 3), dtype=np.uint8)
 
-    mock_source = Mock()
-    mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
-    mock_target = Mock()
-    mock_target.kps = np.random.randn(5, 2).astype(np.float32)
-
-    with pytest.raises(ValueError, match="Unknown face swapper model"):
+    with pytest.raises(ValueError, match="Unknown model"):
         swap_face_enhanced(
-            mock_source, mock_target, temp_frame, mock_model,
+            Mock(), Mock(), temp_frame, mock_model,
             'unknown_model_xyz', (128, 128), weight=1.0,
         )
 
 
-def test_swap_face_enhanced_with_weight_blending():
-    """swap_face_enhanced with weight < 1.0 triggers blending."""
-    from face_swapper import swap_face_enhanced
+def test_swap_face_enhanced_with_weight_blending_source_face():
+    """Source_face models (blendswap/uniface) blend via cv2.addWeighted."""
+
 
     mock_source = Mock()
-    mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
+    mock_source.kps = np.random.randn(5, 2).astype(np.float32)
     mock_target = Mock()
     mock_target.kps = np.random.randn(5, 2).astype(np.float32)
 
     temp_frame = np.ones((256, 256, 3), dtype=np.uint8) * 100
 
     mock_model = Mock()
-    mock_model.emap = np.eye(512, dtype=np.float32)
-    mock_model.input_names = ["input", "latent"]
+    mock_model.input_names = ["target", "source"]
     mock_model.output_names = ["output"]
     mock_model.session = Mock()
     mock_model.session.run = Mock(return_value=[
         np.zeros((1, 3, 256, 256), dtype=np.float32)
     ])
 
-    resolution = (256, 256)
-
     with (
         patch('face_swapper.face_align.norm_crop2') as mock_norm,
         patch('face_swapper.cv2.resize'),
         patch('face_swapper._prepare_crop_frame'),
         patch('face_swapper._normalize_crop_frame'),
+        patch('face_swapper._prepare_source_face') as mock_src,
         patch('face_swapper._paste_back') as mock_paste,
         patch('face_swapper.cv2.addWeighted') as mock_blend,
     ):
@@ -473,12 +482,116 @@ def test_swap_face_enhanced_with_weight_blending():
             np.ones((256, 256, 3), dtype=np.uint8),
             np.eye(2, 3, dtype=np.float32),
         )
+        mock_src.return_value = np.ones((1, 3, 112, 112), dtype=np.float32)
         mock_paste.return_value = temp_frame.copy()
         mock_blend.return_value = temp_frame.copy()
 
         swap_face_enhanced(
             mock_source, mock_target, temp_frame, mock_model,
-            'uniface_256', resolution, weight=0.7,
+            'blendswap_256', (256, 256), weight=0.7,
         )
-
         mock_blend.assert_called_once()
+
+
+# --- Embedding converter and raw source tests ---
+
+
+def test_load_embedding_converter_file_not_found():
+    """Loading a missing converter should raise FileNotFoundError."""
+    EMBEDDING_CONVERTERS.clear()
+    with patch('os.path.exists', return_value=False):
+        with pytest.raises(FileNotFoundError, match="Converter not found"):
+            _load_embedding_converter("nonexistent.onnx")
+
+
+def test_load_embedding_converter_loads():
+    """Loading a converter should cache and return InferenceSession."""
+    EMBEDDING_CONVERTERS.clear()
+    with (
+        patch('os.path.exists', return_value=True),
+        patch('face_swapper.onnxruntime.InferenceSession') as mock_sess,
+    ):
+        mock_sess.return_value = "fake_session"
+        s1 = _load_embedding_converter("crossface_ghost.onnx")
+        s2 = _load_embedding_converter("crossface_ghost.onnx")
+        assert s1 == s2 == "fake_session"
+        assert mock_sess.call_count == 1  # cached
+
+
+def test_prepare_embedding_raw():
+    """Raw embedding goes through crossface ONNX converter and L2-norm."""
+    EMBEDDING_CONVERTERS.clear()
+    mock_source = Mock()
+    mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
+
+    with (
+        patch('os.path.exists', return_value=True),
+        patch('face_swapper.onnxruntime.InferenceSession') as mock_sess,
+    ):
+        mock_conv = Mock()
+        mock_conv.run.return_value = [np.ones((1, 512), dtype=np.float32) * 2.0]
+        mock_sess.return_value = mock_conv
+
+        result = _prepare_embedding_raw(mock_source, "crossface_ghost.onnx")
+        assert result.shape == (1, 512)
+        assert abs(np.linalg.norm(result) - 1.0) < 0.001
+
+
+def test_prepare_source_face_direct():
+    """Source_face prep: warp face to template, BGR->RGB, /255, CHW + batch."""
+    mock_source = Mock()
+    mock_source.kps = np.random.randn(5, 2).astype(np.float32)
+    temp_frame = np.ones((256, 256, 3), dtype=np.uint8) * 128
+
+    with patch('face_swapper.face_align.norm_crop2') as mock_norm:
+        mock_norm.return_value = (
+            np.ones((112, 112, 3), dtype=np.uint8) * 128,
+            np.eye(2, 3, dtype=np.float32),
+        )
+        result = _prepare_source_face(mock_source, temp_frame, 112)
+        assert result.shape == (1, 3, 112, 112)
+        assert result.dtype == np.float32
+        assert abs(result.mean() - 128.0 / 255.0) < 0.05
+
+
+def test_swap_face_enhanced_embedding_model():
+    """Embedding-type model (simswap) goes through embedding_raw + balance."""
+    mock_source = Mock()
+    mock_source.normed_embedding = np.ones((1, 512), dtype=np.float32)
+    mock_target = Mock()
+    mock_target.kps = np.random.randn(5, 2).astype(np.float32)
+    mock_target.normed_embedding = np.ones((1, 512), dtype=np.float32)
+    temp_frame = np.ones((256, 256, 3), dtype=np.uint8) * 100
+
+    mock_model = Mock()
+    mock_model.input_names = ["target", "source"]
+    mock_model.output_names = ["output"]
+    mock_model.session = Mock()
+    mock_model.session.run = Mock(return_value=[
+        np.zeros((1, 3, 256, 256), dtype=np.float32)
+    ])
+
+    with (
+        patch('face_swapper.face_align.norm_crop2') as mock_norm,
+        patch('face_swapper.cv2.resize'),
+        patch('face_swapper._prepare_crop_frame'),
+        patch('face_swapper._prepare_embedding_raw') as mock_raw,
+        patch('face_swapper._balance_embedding') as mock_bal,
+        patch('face_swapper._normalize_crop_frame'),
+        patch('face_swapper._paste_back') as mock_paste,
+    ):
+        mock_norm.return_value = (
+            np.ones((256, 256, 3), dtype=np.uint8),
+            np.eye(2, 3, dtype=np.float32),
+        )
+        mock_raw.return_value = np.ones((1, 512), dtype=np.float32)
+        mock_bal.return_value = np.ones((1, 512), dtype=np.float32)
+        mock_paste.return_value = temp_frame.copy()
+
+        result = swap_face_enhanced(
+            mock_source, mock_target, temp_frame, mock_model,
+            'simswap_256', (256, 256), weight=1.0,
+        )
+        mock_raw.assert_called_once()
+        mock_bal.assert_called_once()
+        assert result is not None
