@@ -18,7 +18,7 @@ tqdm
 yapf
 python-dotenv
 tqdm
-runpod>=1.10.1
+runpod==1.7.10
 pytest>=9.1.1
 pytest-cov>=7.1.0
 pytest-mock>=3.15.1
