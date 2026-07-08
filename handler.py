@@ -462,7 +462,7 @@ def face_swap_api(job_id: str, job_input: dict):
         logger.error(f'Early validation error: {str(e)}', job_id)
         return {
             'error': str(e),
-            'output': traceback.format_exc()
+            'traceback': traceback.format_exc()
         }
 
     try:
@@ -518,7 +518,7 @@ def face_swap_api(job_id: str, job_input: dict):
 
         return {
             'error': str(e),
-            'output': traceback.format_exc()
+            'traceback': traceback.format_exc()
         }
 
 
@@ -540,7 +540,7 @@ def handler(event):
         logger.error(f'Unhandled handler error: {str(e)}', event.get('id', 'unknown'))
         return {
             'error': str(e),
-            'output': traceback.format_exc()
+            'traceback': traceback.format_exc()
         }
 
 

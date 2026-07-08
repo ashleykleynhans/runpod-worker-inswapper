@@ -524,7 +524,7 @@ class TestFaceSwapApi:
 
         assert 'error' in result
         assert result['error'] == 'Processing failed'
-        assert 'output' in result
+        assert 'traceback' in result
         mock_cleanup.assert_called_once()
 
 

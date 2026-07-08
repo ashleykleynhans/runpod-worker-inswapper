@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.4] - 2026-07-08
+
+### Fixed
+- Rename error 'output' field to 'traceback' to avoid RunPod wrapper collision
+- Restore runpod SDK pin to >=1.10.0
+
 ## [6.0.3] - 2026-07-08
 
 ### Fixed

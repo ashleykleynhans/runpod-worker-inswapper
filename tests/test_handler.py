@@ -340,4 +340,4 @@ class TestHandler:
 
         assert 'error' in result
         assert 'unexpected crash' in result['error']
-        assert 'output' in result
+        assert 'traceback' in result
