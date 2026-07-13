@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.17] - 2026-07-13
+
+### Changed
+- Bump runpod SDK from 1.7.10 to 1.10.1
+
+### Added
+- CUDA 13.0 and 12.9 to allowed versions in hub.json and tests.json
+
 ## [6.0.16] - 2026-07-08
 
 ### Fixed
