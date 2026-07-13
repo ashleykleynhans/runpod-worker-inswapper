@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.18] - 2026-07-13
+
+### Changed
+- Switch Hub test GPU from RTX 4090 to L4 for better availability
+
 ## [6.0.17] - 2026-07-13
 
 ### Changed
