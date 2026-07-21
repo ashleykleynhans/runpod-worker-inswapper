@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.19] - 2026-07-21
+
+### Changed
+- Bump runpod SDK from 1.10.1 to 1.11.0
+- Bump actions/setup-python from 6 to 7
+
 ## [6.0.18] - 2026-07-13
 
 ### Changed
