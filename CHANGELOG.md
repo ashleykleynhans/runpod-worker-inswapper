@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.21] - 2026-08-01
+
+### Added
+- CUDA 13.1, 13.2, and 13.3 to allowed versions in hub.json and tests.json
+
 ## [6.0.19] - 2026-07-21
 
 ### Changed
