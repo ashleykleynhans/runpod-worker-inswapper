@@ -62,9 +62,11 @@ class TestGetFaceAnalyser:
 
         result = get_face_analyser('model_path', 'cuda')
 
+        expected_root = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), '..', 'checkpoints'))
         mock_face_analysis.assert_called_once_with(
             name="buffalo_l",
-            root="./checkpoints",
+            root=expected_root,
             providers=['CUDAExecutionProvider']
         )
         mock_analyser.prepare.assert_called_once_with(ctx_id=0, det_size=(320, 320))
@@ -78,9 +80,11 @@ class TestGetFaceAnalyser:
 
         result = get_face_analyser('model_path', 'cpu')
 
+        expected_root = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), '..', 'checkpoints'))
         mock_face_analysis.assert_called_once_with(
             name="buffalo_l",
-            root="./checkpoints",
+            root=expected_root,
             providers=['CPUExecutionProvider']
         )
         mock_analyser.prepare.assert_called_once_with(ctx_id=0, det_size=(320, 320))
