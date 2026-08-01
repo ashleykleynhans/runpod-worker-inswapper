@@ -44,10 +44,12 @@ def get_face_analyser(model_path: str,
     else:
         providers=['CPUExecutionProvider']
 
+    root_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'checkpoints')
     face_analyser = insightface.app.FaceAnalysis(
         name="buffalo_l",
-        root="./checkpoints",
-        providers=providers
+        root=root_path,
+        providers=providers,
     )
 
     face_analyser.prepare(ctx_id=0, det_size=det_size)

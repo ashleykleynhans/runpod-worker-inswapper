@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.22] - 2026-08-01
+
+### Fixed
+- Fix Runpod Hub tests hanging: symlink insightface models from local checkpoints
+  to prevent auto-download in environments without network volume cache
+- Use absolute path for insightface model root to avoid CWD dependency
+
 ## [6.0.21] - 2026-08-01
 
 ### Added

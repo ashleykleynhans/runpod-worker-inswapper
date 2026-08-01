@@ -15,6 +15,15 @@ else
     echo "No Network Volume found, skipping symlinks"
 fi
 
+# Fallback: ensure insightface models are available locally to prevent
+# auto-download hanging in environments without network volume cache.
+if [ ! -e "/root/.insightface/models/buffalo_l" ]; then
+    echo "Caching insightface models from local checkpoints"
+    mkdir -p /root/.insightface/models
+    ln -s /workspace/runpod-worker-inswapper/checkpoints/models/buffalo_l \
+        /root/.insightface/models/buffalo_l
+fi
+
 echo "Starting RunPod Handler"
 export PYTHONUNBUFFERED=1
 cd /workspace/runpod-worker-inswapper
