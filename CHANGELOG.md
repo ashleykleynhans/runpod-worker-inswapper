@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.24] - 2026-08-17
+
+### Changed
+- Bump all Python dependencies to latest versions compatible with Python 3.10
+
 ## [6.0.23] - 2026-08-01
 
 ### Fixed
