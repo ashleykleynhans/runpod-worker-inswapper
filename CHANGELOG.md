@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.25] - 2026-08-24
+
+### Changed
+- Use Python 3.12 from the deadsnakes PPA instead of Ubuntu 22.04's Python 3.10
+- Bump numpy to 2.5.2, scipy to 1.18.1, scikit-image to 0.26.0, onnxruntime to
+  1.29.0, and protobuf to 7.36.0 (these require Python 3.11+)
+
 ## [6.0.24] - 2026-08-17
 
 ### Changed

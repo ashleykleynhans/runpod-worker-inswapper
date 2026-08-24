@@ -10,13 +10,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Upgrade apt packages and install required dependencies
+# Upgrade apt packages, add the deadsnakes PPA, and install required dependencies
 RUN apt update && \
     apt upgrade -y && \
+    apt install -y software-properties-common && \
+    add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt update && \
     apt install -y \
-      python3-dev \
-      python3-pip \
-      python3.10-venv \
+      python3.12 \
+      python3.12-dev \
+      python3.12-venv \
       fonts-dejavu-core \
       rsync \
       git \
@@ -38,6 +41,12 @@ RUN apt update && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean -y
+
+# Make Python 3.12 the default python3 and bootstrap pip for it
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 100 && \
+    update-alternatives --set python3 /usr/bin/python3.12 && \
+    rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED && \
+    curl -sS https://bootstrap.pypa.io/get-pip.py | python3 -
 
 # Set working directory
 WORKDIR /workspace
