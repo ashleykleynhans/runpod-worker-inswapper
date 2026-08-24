@@ -10,7 +10,7 @@ onnx==1.22.0
 onnxruntime==1.23.2
 opencv-python==5.0.0.93
 protobuf==7.35.1
-scikit-image==0.25.2
+scikit-image==0.26.0
 scipy==1.15.3
 torch
 torchvision
