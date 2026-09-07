@@ -9,7 +9,7 @@ numpy==2.5.2
 onnx==1.22.0
 onnxruntime==1.29.0
 opencv-python==5.0.0.93
-protobuf==7.36.0
+protobuf==7.36.1
 scikit-image==0.26.0
 scipy==1.18.1
 torch
