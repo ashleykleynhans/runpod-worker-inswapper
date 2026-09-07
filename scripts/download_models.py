@@ -24,9 +24,12 @@ MODELS_3_0_0 = f"{_BASE}/models-3.0.0"
 MODELS_3_1_0 = f"{_BASE}/models-3.1.0"
 MODELS_3_3_0 = f"{_BASE}/models-3.3.0"
 MODELS_3_4_0 = f"{_BASE}/models-3.4.0"
+MODELS_3_9_0 = f"{_BASE}/models-3.9.0"
 CODEFORMER_URL = "https://github.com/sczhou/CodeFormer/releases/download/v0.1.0"
 
 DOWNLOADS = [
+    # Face swapper models — models-3.9.0
+    (FACE_SWAPPER, "alphaface_256.onnx", f"{MODELS_3_9_0}/alphaface_256.onnx"),
     # Face swapper models — models-3.0.0
     (FACE_SWAPPER, "blendswap_256.onnx", f"{MODELS_3_0_0}/blendswap_256.onnx"),
     (FACE_SWAPPER, "ghost_1_256.onnx", f"{MODELS_3_0_0}/ghost_1_256.onnx"),

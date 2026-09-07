@@ -23,7 +23,7 @@ https://insightface.ai/).
 
 ## Face Swapper Models
 
-The worker supports 13 different face swap models with varying quality/speed trade-offs.
+The worker supports 14 different face swap models with varying quality/speed trade-offs.
 
 ### Available Models
 
@@ -31,7 +31,8 @@ The worker supports 13 different face swap models with varying quality/speed tra
 - `inswapper_128` (default) - Original balanced quality/speed model
 - `inswapper_128_fp16` - Faster FP16 version
 
-**Embedding models (use crossface converters):**
+**Embedding models (use crossface converters or direct):**
+- `alphaface_256` - AlphaFace models with direct embedding (no converter)
 - `simswap_256` - High quality with ImageNet normalization
 - `simswap_unofficial_512` - Highest quality (slower)
 - `ghost_1_256`, `ghost_2_256`, `ghost_3_256` - Ghost model variants

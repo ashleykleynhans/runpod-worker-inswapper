@@ -8,10 +8,11 @@ from face_swapper_models import (
 
 
 def test_model_set_exists():
-    assert len(FACE_SWAPPER_MODEL_SET) == 13
+    assert len(FACE_SWAPPER_MODEL_SET) == 14
     assert 'inswapper_128' in FACE_SWAPPER_MODEL_SET
     assert 'hyperswap_1a_256' in FACE_SWAPPER_MODEL_SET
     assert 'hififace_unofficial_256' in FACE_SWAPPER_MODEL_SET
+    assert 'alphaface_256' in FACE_SWAPPER_MODEL_SET
 
 
 def test_validate_ok():
@@ -74,6 +75,13 @@ def test_metadata_hyperswap():
     mt = get_model_metadata('hyperswap_1a_256')
     assert mt['tanh_out'] and mt['source_type'] == 'embedding_norm'
     assert mt['warp_template'] == 'arcface_128'
+
+
+def test_metadata_alphaface():
+    mt = get_model_metadata('alphaface_256')
+    assert mt['source_type'] == 'embedding_direct'
+    assert mt['warp_template'] == 'arcface_128'
+    assert mt['native_size'] == (256, 256)
 
 
 def test_metadata_blendswap():

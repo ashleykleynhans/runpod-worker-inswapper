@@ -200,6 +200,11 @@ def _prepare_embedding_raw(source_face, converter_name):
     return (c / np.linalg.norm(c)).reshape(1, -1)
 
 
+def _prepare_embedding_direct(source_face):
+    """alphaface: raw embedding without projection or conversion."""
+    return source_face.embedding.reshape((1, -1))
+
+
 def _prepare_embedding_norm(source_face):
     """hyperswap: use L2-normalized embedding (insightface normed_embedding)."""
     return source_face.normed_embedding.reshape((1, -1))
@@ -284,6 +289,9 @@ def swap_face_enhanced(
     # --- Source: depends on model family ---
     if source_type == "embedding_projected":
         source_input = _prepare_embedding_projected(source_face, model)
+        source_input = _balance_embedding(source_input, target_face.embedding, weight, l2_norm_target=l2_norm)
+    elif source_type == "embedding_direct":
+        source_input = _prepare_embedding_direct(source_face)
         source_input = _balance_embedding(source_input, target_face.embedding, weight, l2_norm_target=l2_norm)
     elif source_type == "embedding":
         source_input = _prepare_embedding_raw(source_face, meta["converter"])

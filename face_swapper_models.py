@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 
 # Model compatibility matrix: model name -> supported resolutions
 FACE_SWAPPER_MODEL_SET: Dict[str, List[str]] = {
+    "alphaface_256": ["256x256", "512x512", "768x768", "1024x1024"],
     "blendswap_256": ["256x256", "384x384", "512x512", "768x768", "1024x1024"],
     "ghost_1_256": ["256x256", "512x512", "768x768", "1024x1024"],
     "ghost_2_256": ["256x256", "512x512", "768x768", "1024x1024"],
@@ -28,6 +29,13 @@ DEFAULT_RESOLUTIONS: Dict[str, str] = {
 }
 
 MODEL_METADATA: Dict[str, dict] = {
+    "alphaface_256": {
+        "native_size": (256, 256),
+        "mean": [0.0, 0.0, 0.0], "std": [1.0, 1.0, 1.0],
+        "tanh_out": False,
+        "source_type": "embedding_direct",
+        "warp_template": "arcface_128",
+    },
     "blendswap_256": {
         "native_size": (256, 256),
         "mean": [0.0, 0.0, 0.0], "std": [1.0, 1.0, 1.0],

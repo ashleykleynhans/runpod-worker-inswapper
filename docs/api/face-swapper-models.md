@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Runpod Inswapper worker supports 13 face swap models with different quality/speed characteristics, configurable resolution, face mask controls, and face selector filtering.
+The Runpod Inswapper worker supports 14 face swap models with different quality/speed characteristics, configurable resolution, face mask controls, and face selector filtering.
 
 ## Parameters
 
@@ -15,6 +15,7 @@ The Runpod Inswapper worker supports 13 face swap models with different quality/
 Selects which face swap model to use for inference.
 
 **Valid values:**
+- `alphaface_256`
 - `blendswap_256`
 - `ghost_1_256`, `ghost_2_256`, `ghost_3_256`
 - `hififace_unofficial_256`
@@ -47,7 +48,7 @@ Not all models support all resolutions. See compatibility matrix below. If not s
 **Default:** 1.0
 **Range:** 0.0 - 1.0
 
-Controls blending between original and swapped face identity. Models that accept embedding inputs (inswapper, simswap, ghost, hififace, hyperswap) interpolate source and target embeddings. Source-face models (blendswap, uniface) use pixel-level blending.
+Controls blending between original and swapped face identity. Models that accept embedding inputs (alphaface, inswapper, simswap, ghost, hififace, hyperswap) interpolate source and target embeddings. Source-face models (blendswap, uniface) use pixel-level blending.
 
 - `1.0` - Full face swap (100% swapped identity)
 - `0.7` - Subtle blend (70% swapped, 30% original)
@@ -126,6 +127,7 @@ Maximum age (inclusive) of target faces to swap. Faces with estimated age above 
 
 | Model | Supported Resolutions | Warp Template | Source Type |
 |---|---|---|---|
+| alphaface_256 | 256x256, 512x512, 768x768, 1024x1024 | arcface_128 | embedding_direct |
 | blendswap_256 | 256x256, 384x384, 512x512, 768x768, 1024x1024 | ffhq_512 | source_face |
 | ghost_1_256 | 256x256, 512x512, 768x768, 1024x1024 | arcface_112_v1 | embedding |
 | ghost_2_256 | 256x256, 512x512, 768x768, 1024x1024 | arcface_112_v1 | embedding |

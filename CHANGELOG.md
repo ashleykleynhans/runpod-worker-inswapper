@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.0] - 2026-09-07
+
+### Added
+- alphaface_256 model from FaceFusion 3.9.0 (direct embedding, arcface_128 template)
+- Example script for alphaface_256
+
 ## [6.0.26] - 2026-09-07
 
 ### Changed
