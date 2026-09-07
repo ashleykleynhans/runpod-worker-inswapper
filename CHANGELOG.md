@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.26] - 2026-09-07
+
+### Changed
+- Bump protobuf from 7.36.0 to 7.36.1
+
 ## [6.0.25] - 2026-08-24
 
 ### Changed
