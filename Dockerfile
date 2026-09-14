@@ -1,4 +1,4 @@
-ARG CUDA_VERSION="13.0.3"
+ARG CUDA_VERSION="12.4.1"
 FROM nvidia/cuda:${CUDA_VERSION}-cudnn-devel-ubuntu22.04
 
 LABEL org.opencontainers.image.description="Runpod Serverless worker for face swapping using FaceFusion swapper models and insightface detection"
@@ -52,8 +52,8 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1
 WORKDIR /workspace
 
 # Install Torch
-ARG INDEX_URL="https://download.pytorch.org/whl/cu130"
-ARG TORCH_VERSION="2.14.0+cu130"
+ARG INDEX_URL="https://download.pytorch.org/whl/cu124"
+ARG TORCH_VERSION="2.6.0+cu124"
 RUN pip3 install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio --index-url ${INDEX_URL}
 
 # Download models first (stable 5.4 GB layer, cached across code changes)

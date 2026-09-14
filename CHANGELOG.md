@@ -2,14 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [7.0.2] - 2026-09-14
-
-### Fixed
-- Fix onnxruntime CUDA provider errors (libcublasLt.so.13, libcublas.so.13, libcufft.so.12 missing) by upgrading base image to CUDA 13.0.3
-
-### Changed
-- Bump CUDA base from 12.4.1 to 13.0.3 and torch from 2.6.0+cu124 to 2.14.0+cu130 to match onnxruntime 1.30.0 CUDA 13 requirement
-
 ## [7.0.1] - 2026-09-14
 
 ### Changed
