@@ -14,7 +14,7 @@ scikit-image==0.26.0
 scipy==1.18.1
 torch
 torchvision
-tqdm==4.70.0
+tqdm==4.70.1
 yapf==0.43.0
 python-dotenv==1.2.3
 runpod==1.12.0
