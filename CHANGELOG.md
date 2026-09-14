@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.5] - 2026-09-14
+
+### Fixed
+- Restrict Runpod deployment to CUDA 12.4 only to prevent Blackwell and other CUDA 13 GPUs which are incompatible with 12.4 base image
+
 ## [7.0.4] - 2026-09-14
 
 ### Fixed
