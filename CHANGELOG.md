@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.4] - 2026-09-14
+
+### Fixed
+- Broaden Runpod Hub deployment GPU types for supply constraints (AMPERE_24,AMPERE_48,AMPERE_80,ADA_24,ADA_48) and switch Hub test GPU from L4 to RTX 4090 for better availability
+
 ## [7.0.3] - 2026-09-14
 
 ### Fixed
