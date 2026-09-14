@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.7] - 2026-09-14
+
+### Fixed
+- Expand Runpod allowedCudaVersions from 12.4 only to 12.4-12.9 for 4090 supply (single 12.4 had no instances, fallback Blackwell incompatible)
+
 ## [7.0.6] - 2026-09-14
 
 ### Fixed
