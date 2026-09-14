@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.6] - 2026-09-14
+
+### Fixed
+- Revert Runpod Hub GPU pool to AMPERE_24,ADA_24 (non-Blackwell) as requested, keeps RTX 4090 coverage via ADA_24 while removing extra 48/80 pools
+
 ## [7.0.5] - 2026-09-14
 
 ### Fixed
