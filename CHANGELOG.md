@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.1] - 2026-09-14
+
+### Changed
+- Bump numpy from 2.5.2 to 2.5.3
+- Bump onnxruntime from 1.29.0 to 1.30.0
+- Bump tqdm from 4.70.0 to 4.70.1
+- Bump insightface from 1.0.1 to 2.0
+
 ## [7.0.0] - 2026-09-07
 
 ### Added
