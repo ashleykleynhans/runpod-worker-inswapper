@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.3] - 2026-09-14
+
+### Fixed
+- Downgrade onnxruntime from 1.29.0 to 1.26.0 for CUDA 12.4 compatibility (1.29.0 still requires CUDA 13 and fails with libcublasLt.so.13 missing)
+
 ## [7.0.2] - 2026-09-14
 
 ### Fixed

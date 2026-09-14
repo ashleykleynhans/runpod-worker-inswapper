@@ -67,7 +67,7 @@ RUN git clone https://github.com/ashleykleynhans/runpod-worker-inswapper.git && 
     cd /workspace/runpod-worker-inswapper && \
     pip3 install -r requirements.txt && \
     pip3 uninstall -y onnxruntime && \
-    pip3 install onnxruntime-gpu==1.29.0 && \
+    pip3 install onnxruntime-gpu==1.26.0 && \
     mv /workspace/models_cache/checkpoints /workspace/runpod-worker-inswapper/checkpoints
 
 # Install CodeFormer
