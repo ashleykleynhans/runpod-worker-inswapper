@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.9] - 2026-09-14
+
+### Fixed
+- Expand Runpod allowedCudaVersions to 12.4-13.3 for broader supply
+
 ## [7.0.8] - 2026-09-14
 
 ### Fixed
