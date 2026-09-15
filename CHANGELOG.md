@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.8] - 2026-09-14
+
+### Fixed
+- Switch Runpod Hub test GPU from RTX 4090 to L4 for non-Blackwell 4090/A5000/L4 coverage (RTX 4090 had no supply on 12.4-12.9)
+
 ## [7.0.7] - 2026-09-14
 
 ### Fixed
