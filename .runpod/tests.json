@@ -105,6 +105,7 @@
     "gpuTypeId": "NVIDIA L4",
     "gpuCount": 1,
     "allowedCudaVersions": [
+      "13.4",
       "13.3",
       "13.2",
       "13.1",

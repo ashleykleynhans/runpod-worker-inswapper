@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.12] - 2026-09-28
+
+### Fixed
+- Add CUDA 13.4 to Runpod allowedCudaVersions for broader supply
+
 ## [7.0.11] - 2026-09-28
 
 ### Changed
