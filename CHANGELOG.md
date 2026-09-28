@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.11] - 2026-09-28
+
+### Changed
+- Bump onnx from 1.22.0 to 1.23.0
+- Bump pytest-mock from 3.15.1 to 3.16.0
+
 ## [7.0.10] - 2026-09-21
 
 ### Changed
