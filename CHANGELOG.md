@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.13] - 2026-10-05
+
+### Changed
+- Bump insightface from 2.0 to 2.1
+- Bump lmdb from 2.3.0 to 3.0.0
+- Bump onnx from 1.23.0 to 1.23.1
+- Bump python-dotenv from 1.2.3 to 1.2.4
+
 ## [7.0.12] - 2026-09-28
 
 ### Fixed
