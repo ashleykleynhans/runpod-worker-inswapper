@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.14] - 2026-10-13
+
+### Changed
+- Bump numpy from 2.5.3 to 2.5.4
+- Bump onnx from 1.23.1 to 1.23.2
+
 ## [7.0.13] - 2026-10-05
 
 ### Changed
