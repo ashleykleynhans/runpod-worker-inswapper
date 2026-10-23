@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.15] - 2026-10-23
+
+### Changed
+- Bump Pillow from 12.3.0 to 13.0.0
+- Bump pytest-mock from 3.16.0 to 3.17.0
+- Keep onnxruntime at 1.26.0 since 1.27+ requires CUDA 13, which is incompatible with the CUDA 12.4 base image
+
 ## [7.0.14] - 2026-10-13
 
 ### Changed
