@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.16] - 2026-11-02
+
+### Changed
+- Bump pytest from 9.1.1 to 9.2.0
+- Keep onnxruntime at 1.26.0, and torch/torchvision at 2.6.0/0.21.0 since newer releases require CUDA 13, which is incompatible with the CUDA 12.4 base image
+
 ## [7.0.15] - 2026-10-23
 
 ### Changed
