@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.17] - 2026-11-13
+
+### Changed
+- Bump runpod from 1.12.0 to 2.2.1
+- Keep onnxruntime at 1.26.0, torch/torchvision at 2.6.0/0.21.0, and the CUDA 12.4.1 base image since newer releases require CUDA 13
+
 ## [7.0.16] - 2026-11-02
 
 ### Changed
