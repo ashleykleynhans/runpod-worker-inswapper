@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.21] - 2026-11-23
+
+### Fixed
+- Retry apt downloads and the deadsnakes PPA install so builds survive transient Launchpad 503s
+- Re-release 7.0.20 as 7.0.21 because the 7.0.20 build failed during the Launchpad outage
+
+### Changed
+- Keep onnxruntime at 1.26.0, torch/torchvision at 2.6.0/0.21.0, and the CUDA 12.4.1 base image since newer releases require CUDA 13
+
 ## [7.0.20] - 2026-11-23
 
 ### Fixed

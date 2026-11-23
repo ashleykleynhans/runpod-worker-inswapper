@@ -10,34 +10,41 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Upgrade apt packages, add the deadsnakes PPA, and install required dependencies
-RUN apt update && \
-    apt upgrade -y && \
-    apt install -y software-properties-common && \
+# Upgrade apt packages, add the deadsnakes PPA, and install required dependencies.
+# The Launchpad PPA intermittently returns 503s, so retry downloads aggressively
+# and retry the install itself before giving up.
+RUN apt-get update -o Acquire::Retries=10 && \
+    apt-get upgrade -y -o Acquire::Retries=10 && \
+    apt-get install -y -o Acquire::Retries=10 software-properties-common && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
-    apt update && \
-    apt install -y \
-      python3.12 \
-      python3.12-dev \
-      python3.12-venv \
-      fonts-dejavu-core \
-      rsync \
-      git \
-      git-lfs \
-      jq \
-      moreutils \
-      aria2 \
-      wget \
-      curl \
-      libglib2.0-0 \
-      libsm6 \
-      libgl1 \
-      libxrender1 \
-      libxext6 \
-      ffmpeg \
-      unzip \
-      libgoogle-perftools-dev \
-      procps && \
+    apt-get update -o Acquire::Retries=10 && \
+    for attempt in 1 2 3 4 5; do \
+      apt-get install -y -o Acquire::Retries=10 \
+        python3.12 \
+        python3.12-dev \
+        python3.12-venv \
+        fonts-dejavu-core \
+        rsync \
+        git \
+        git-lfs \
+        jq \
+        moreutils \
+        aria2 \
+        wget \
+        curl \
+        libglib2.0-0 \
+        libsm6 \
+        libgl1 \
+        libxrender1 \
+        libxext6 \
+        ffmpeg \
+        unzip \
+        libgoogle-perftools-dev \
+        procps && break; \
+      echo "apt-get install failed (attempt ${attempt}), retrying in 15s..." >&2; \
+      sleep 15; \
+    done && \
+    python3.12 --version && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get clean -y
