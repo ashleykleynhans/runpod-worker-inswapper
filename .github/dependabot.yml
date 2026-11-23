@@ -18,6 +18,12 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+    ignore:
+      # 1.27+ requires CUDA 13; this worker stays on the CUDA 12.4.1 base image
+      - dependency-name: "onnxruntime"
+        versions: [">=1.27.0"]
+      - dependency-name: "onnxruntime-gpu"
+        versions: [">=1.27.0"]
 
   # Docker base images
   - package-ecosystem: "docker"
