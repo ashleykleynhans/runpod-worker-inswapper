@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.19] - 2026-11-23
+
+### Changed
+- Bump opencv-python from 5.0.0.93 to 5.1.0.95
+- Bump PyYAML from 6.0.3 to 6.0.4
+- Bump runpod from 2.2.1 to 2.4.0
+- Keep onnxruntime at 1.26.0, torch/torchvision at 2.6.0/0.21.0, and the CUDA 12.4.1 base image since newer releases require CUDA 13
+
 ## [7.0.18] - 2026-11-16
 
 ### Changed
