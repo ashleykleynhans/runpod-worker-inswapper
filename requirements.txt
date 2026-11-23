@@ -7,7 +7,7 @@ lmdb==3.0.0
 lpips==0.1.4
 numpy==2.5.5
 onnx==1.23.2
-onnxruntime==1.26.0
+onnxruntime==1.32.0
 opencv-python==5.1.0.95
 protobuf==7.36.2
 scikit-image==0.26.0
